@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<script src="./jquery-1.9.1.min.js"></script>
+	<script src="./highcharts.src.js"></script>
+
+<script>
+
+// Size of the mini-batch of data, 
+// mini-batch size of 1 is equivalent to SGD
+// and a size equal to the data set is equivalent to the Batch Gradient Descent.
+var g_batch_size = 10;
+
+// learning rate
+var g_learning_rate = 0.0005;
+
+// number of mini-batch epochs.
+var g_mini_batch_size = 10;
+
+// Training data.
+var g_train_data = [
+	//[x0,x1,y]
+	[1.3432504e+00,-1.3311479e+00,0.0000000e+00],
+	[1.8205529e+00,-6.3466810e-01,0.0000000e+00],
+	[9.8632067e-01,-1.8885762e+00,0.0000000e+00],
+	[1.9443734e+00,-1.6354520e+00,0.0000000e+00],
+	[9.7673352e-01,-1.3533151e+00,0.0000000e+00],
+	[1.9458584e+00,-2.0443278e+00,0.0000000e+00],
+	[2.1075153e+00,-2.1256684e+00,0.0000000e+00],
+	[2.0703730e+00,-2.4634101e+00,0.0000000e+00],
+	[8.6864964e-01,-2.4119348e+00,0.0000000e+00],
+	[1.8006594e+00,-2.7739689e+00,0.0000000e+00],
+	[3.1283787e+00,-3.4452432e+00,0.0000000e+00],
+	[3.0947429e+00,-3.6446145e+00,0.0000000e+00],
+	[2.9086652e+00,-4.0065037e+00,0.0000000e+00],
+	[2.6770338e+00,-3.0198592e+00,0.0000000e+00],
+	[2.7458671e+00,-2.7100561e+00,0.0000000e+00],
+	[4.1714647e+00,-3.4622482e+00,0.0000000e+00],
+	[3.9313220e+00,-2.1099044e+00,0.0000000e+00],
+	[4.3786870e+00,-2.3804743e+00,0.0000000e+00],
+	[4.8016565e+00,-3.3803344e+00,0.0000000e+00],
+	[4.1661050e+00,-2.8138844e+00,0.0000000e+00],
+	[2.4670141e+00,-1.6108444e+00,0.0000000e+00],
+	[3.4826743e+00,-1.5533872e+00,0.0000000e+00],
+	[3.3652482e+00,-1.8164936e+00,0.0000000e+00],
+	[2.8772788e+00,-1.8511689e+00,0.0000000e+00],
+	[3.1090444e+00,-1.6384946e+00,0.0000000e+00],
+	[2.2183701e+00,7.4279558e-02,0.0000000e+00],
+	[1.9949873e+00,1.6268659e-01,0.0000000e+00],
+	[2.9500308e+00,1.6873016e-02,0.0000000e+00],
+	[2.0216009e+00,1.7227387e-01,0.0000000e+00],
+	[2.0486921e+00,-6.3581041e-01,0.0000000e+00],
+	[8.7548563e-01,-5.4586168e-01,0.0000000e+00],
+	[5.7079941e-01,-3.3278660e-02,0.0000000e+00],
+	[1.4266468e+00,-7.5288337e-01,0.0000000e+00],
+	[7.2265633e-01,-8.6691930e-01,0.0000000e+00],
+	[9.5346198e-01,-1.4896956e+00,0.0000000e+00],
+	[4.8333333e+00,7.0175439e-02,0.0000000e+00],
+	[4.3070175e+00,1.4152047e+00,0.0000000e+00],
+	[6.0321637e+00,4.5029240e-01,0.0000000e+00],
+	[5.4181287e+00,-2.7076023e+00,0.0000000e+00],
+	[3.4590643e+00,-2.8245614e+00,0.0000000e+00],
+	[2.7280702e+00,-9.2397661e-01,0.0000000e+00],
+	[1.0029240e+00,7.7192982e-01,0.0000000e+00],
+	[3.6637427e+00,-7.7777778e-01,0.0000000e+00],
+	[4.3070175e+00,-1.0409357e+00,0.0000000e+00],
+	[3.6929825e+00,-1.0526316e-01,0.0000000e+00],
+	[5.7397661e+00,-1.6257310e+00,0.0000000e+00],
+	[4.9795322e+00,-1.5087719e+00,0.0000000e+00],
+	[6.5000000e+00,-2.9122807e+00,0.0000000e+00],
+	[5.2426901e+00,9.1812865e-01,0.0000000e+00],
+	[1.6754386e+00,5.6725146e-01,0.0000000e+00],
+	[5.1708997e+00,1.2103667e+00,1.0000000e+00],
+	[4.8795188e+00,1.6081848e+00,1.0000000e+00],
+	[4.6649870e+00,1.0695532e+00,1.0000000e+00],
+	[4.4934321e+00,1.2351592e+00,1.0000000e+00],
+	[4.1512967e+00,8.6721260e-01,1.0000000e+00],
+	[3.7177080e+00,1.1517200e+00,1.0000000e+00],
+	[3.6224477e+00,1.3106769e+00,1.0000000e+00],
+	[3.0606943e+00,1.4857163e+00,1.0000000e+00],
+	[7.0718465e+00,-3.4961651e-01,1.0000000e+00],
+	[6.0391832e+00,-2.4756832e-01,1.0000000e+00],
+	[6.6747480e+00,-1.2484766e-01,1.0000000e+00],
+	[6.8461291e+00,2.5977167e-01,1.0000000e+00],
+	[6.4270724e+00,-1.4713863e-01,1.0000000e+00],
+	[6.8456065e+00,1.4754967e+00,1.0000000e+00],
+	[7.7054006e+00,1.6045555e+00,1.0000000e+00],
+	[6.2870658e+00,2.4156427e+00,1.0000000e+00],
+	[6.9810956e+00,1.2599865e+00,1.0000000e+00],
+	[7.0990172e+00,2.2155151e+00,1.0000000e+00],
+	[5.5275479e+00,2.9968421e-01,1.0000000e+00],
+	[5.8303489e+00,-2.1974408e-01,1.0000000e+00],
+	[6.3594527e+00,2.3944217e-01,1.0000000e+00],
+	[6.1004524e+00,-4.0957414e-02,1.0000000e+00],
+	[5.6237412e+00,3.7135914e-01,1.0000000e+00],
+	[5.8836969e+00,2.7768186e+00,1.0000000e+00],
+	[5.5781611e+00,3.0682889e+00,1.0000000e+00],
+	[7.0050662e+00,-2.5781727e-01,1.0000000e+00],
+	[4.4538114e+00,8.3941831e-01,1.0000000e+00],
+	[5.6495924e+00,1.3053929e+00,1.0000000e+00],
+	[4.6337489e+00,1.9467546e+00,1.0000000e+00],
+	[3.6986847e+00,2.2594084e+00,1.0000000e+00],
+	[4.1193005e+00,2.5474510e+00,1.0000000e+00],
+	[4.7665558e+00,2.7531209e+00,1.0000000e+00],
+	[3.0812098e+00,2.7985255e+00,1.0000000e+00],
+	[4.0730994e+00,-3.0292398e+00,1.0000000e+00],
+	[3.4883041e+00,-1.8888889e+00,1.0000000e+00],
+	[7.6900585e-01,1.2105263e+00,1.0000000e+00],
+	[1.5000000e+00,3.8128655e+00,1.0000000e+00],
+	[5.7982456e+00,-2.0935673e+00,1.0000000e+00],
+	[6.8114529e+00,-8.3456730e-01,1.0000000e+00],
+	[7.1106096e+00,-1.0201158e+00,1.0000000e+00],
+	[7.4941520e+00,-1.7426901e+00,1.0000000e+00],
+	[3.1374269e+00,4.2105263e-01,1.0000000e+00],
+	[1.6754386e+00,5.0877193e-01,1.0000000e+00],
+	[2.4941520e+00,-8.6549708e-01,1.0000000e+00],
+	[4.7748538e+00,9.9415205e-02,1.0000000e+00],
+	[5.8274854e+00,-6.9005848e-01,1.0000000e+00],
+	[2.2894737e+00,1.9707602e+00,1.0000000e+00],
+	[2.4941520e+00,1.4152047e+00,1.0000000e+00],
+	[2.0847953e+00,1.3567251e+00,1.0000000e+00],
+];
+
+// Retrieve plot point coordinates for the plot.
+var get_plot_data = function(train_data) {
+	var X0 = [];
+	var x0_i = 0;
+	var X1 = [];
+	var x1_i = 0;
+	var min_x0 = 1000;
+	var max_x0 = 0;
+	for (var i = 0; i < train_data.length; ++i) {
+		if (train_data[i][0] < min_x0) {
+			min_x0 = train_data[i][0];
+		}
+		if (train_data[i][0] > max_x0) {
+			max_x0 = train_data[i][0];
+		}
+
+		if (train_data[i][2]>0) {
+			X0[x0_i] = {
+				x: train_data[i][0],
+				y: train_data[i][1],
+			};
+			x0_i++;
+		} else {
+			X1[x1_i] = {
+				x: train_data[i][0],
+				y: train_data[i][1],
+			};
+			x1_i++;
+		}
+	};
+	return {
+		"positives": X0, 
+		"negatives": X1,
+		"max_x0": max_x0, 
+		"min_x0": min_x0,
+	};
+};
+
+// Plot the graph with the given boundary B.
+var plot_graph = function(data, boundary) {
+	chart = new Highcharts.Chart({
+		chart: {
+			renderTo: 'container',
+			type: 'scatter',
+			zoomType: 'xy'
+		},
+		title: {
+			text: 'Logistic Regression Simulation'
+		},
+		xAxis: {
+			title: {
+				enabled: true,
+				text: 'x1'
+			},
+			startOnTick: true,
+			endOnTick: true,
+			showLastLabel: true
+		},
+		yAxis: {
+			title: {
+				text: 'x2'
+			}
+		},
+		tooltip: {
+			formatter: function() {
+					return ''+
+					this.x +' , '+ this.y;
+			}
+		},
+		legend: {
+			layout: 'vertical',
+			align: 'left',
+			verticalAlign: 'top',
+			x: 100,
+			y: 70,
+			floating: true,
+			backgroundColor: '#FFFFFF',
+			borderWidth: 1
+		},
+		plotOptions: {
+			scatter: {
+				marker: {
+					radius: 5,
+					states: {
+						hover: {
+							enabled: true,
+							lineColor: 'rgb(100,100,100)'
+						}
+					}
+				},
+				states: {
+					hover: {
+						marker: {
+							enabled: false
+						}
+					}
+				}
+			}
+		},
+		series: [{
+			name: 'Positive',
+			color: 'rgba(223, 83, 83, .5)',
+			data: data["positives"]
+
+		}, {
+			name: 'Negative',
+			color: 'rgba(119, 152, 191, .5)',
+			data: data["negatives"]
+		}, {
+			name: 'Decision Bounday',
+			type: 'line',
+			data: boundary
+		}]
+	});
+};
+
+// calculates sigmoid(W.x)
+var get_prediction = function(theta, x) {
+	var sum_product = theta[0]+theta[1]*x[0] + theta[2]*x[1];
+	return 1.0/(1.0+Math.exp(-sum_product));
+};
+
+// Calculate the start and terminal coordinates of the decision boundary.
+var get_decision_boundary = function (min_x0, max_x0, theta) {
+	return [{
+		x: min_x0,
+		y: -1.0*(theta[1]*min_x0 + theta[0])/theta[2],
+	},{
+		x: max_x0,
+		y: -1.0*(theta[1]*max_x0 + theta[0])/theta[2],
+	}];
+};
+
+// Parses through one mini-batch of training data and updates the model.
+function update_once(min_x0, max_x0, theta, train_data, alpha) {
+	//TODO(weidoliang): this mini-batch implementation is incorrect, need to fix it.
+	//this is the SGD implementation.
+	var mini_batch = g_batch_size;
+	while (mini_batch-- > 0) {
+		for (var i = 0; i < train_data.length; ++i) {
+			var cur_y = train_data[i][2];
+			var cur_x0 = train_data[i][0];
+			var cur_x1 = train_data[i][1];
+			var cur_x = [cur_x0, cur_x1];
+			var diff = cur_y - get_prediction(theta, cur_x);
+			//theta_j = theta_j + alpha * (y[i] - h[x[i]])*x[i][j]
+			var new_theta = [
+				theta[0] + alpha * diff * 1,
+				theta[1] + alpha * diff * cur_x[0],
+				theta[2] + alpha * diff * cur_x[1]];
+			theta_diff = (new_theta[0] - theta[0])*(new_theta[0] - theta[0]) +
+				(new_theta[1] - theta[1])*(new_theta[1] - theta[1])+
+				(new_theta[2] - theta[2])*(new_theta[2] - theta[2]);
+			theta[0] = new_theta[0];
+			theta[1] = new_theta[1];
+			theta[2] = new_theta[2];
+		}
+		counter++;
+	}
+};
+
+// Plot the data into a table.
+var fill_table = function(div_id, data) {
+	var table = "<table>";
+	table += "<tr><th>x1</th><th>x2</th><th>y</th></tr>";
+	for (var i = 0; i < data.length; ++i) {
+		table += "<tr><td>" + data[i][0] + "</td><td>" + data[i][1] + "</td><td>" + data[i][2] + "</td></tr>";
+	}
+	table += "</table>";
+	$('#'+div_id).html(table);
+};
+
+// Creates a simulation object.
+var get_training_simulation = function(plot_data, n_loops, model, data, learning_rate) {
+	var min_x0 = plot_data["min_x0"];
+	var max_x0 = plot_data["max_x0"];
+	var loop_counter = n_loops;
+	var theta = model;
+	var train_data = data;
+	var alpha = learning_rate;
+	var epoch = 0;
+	var simulation_loop = function() {
+		// Updates the model.
+		update_once(min_x0, max_x0, theta, train_data, alpha);
+		// Updates the graph.
+		var boundary = get_decision_boundary(min_x0, max_x0, theta);
+		chart.series[2].setData(boundary, true);
+		$('#counter').html(''+(++epoch));
+		
+		--loop_counter;
+		if (loop_counter > 0) {
+			setTimeout(simulation_loop, 1000);
+		}
+	};
+	return simulation_loop;
+};
+
+// Entry Point of the simulation.
+$(document).ready(function() {
+	// model parameters: [beta, w1, w2]
+	var theta = [0.0, 0.0, 0.0];
+
+	fill_table("table", g_train_data);
+	var plot_data = get_plot_data(g_train_data);
+	var boundary = get_decision_boundary(plot_data["min_x0"], plot_data["max_x0"], theta);
+	plot_graph(plot_data, boundary);
+	
+	var do_simulation = get_training_simulation(plot_data, g_mini_batch_size, theta, g_train_data, g_learning_rate);
+	do_simulation();
+});
+</script>
+
+<style type="text/css">
+#the_simulation {
+float: left;
+width: 600px;
+margin: 10px;
+}
+
+#container {
+width: 100%;
+height: 600px;
+}
+
+#the_data {
+flow: left;
+margin: 10px;
+}
+
+#the_data table {
+}
+
+#the_data table td {
+text-align: left;
+padding-left: 4px;
+padding-right: 4px;
+padding-top: 2px;
+padding-bottom: 2px;
+}
+</style>
+
+
+</head>
+	<title>Logistic Regression Training Simulation</title>
+<body>
+	<h1>Logistic Regression Training Simulation</h1>
+	<p>by Weidong Liang</p>
+	<p>Beijing, 2013</p>
+	<hr/>
+	<h2>Introduction</h2>
+	<p>We are given a set of data as shown on the right below. We are interested in founding the optimal boundary that can help us to determine whether the given instance is positive or negative. To do this, we use logistic regression with 2 parameters. That is <br/> 
+	<code>P(y == 1| x1, x2) = sigmoid(&beta; + w1 * x1 + w2 * x2)</code><br/>
+	where <code>sigmoid(x) = 1 / (1 + e ^ -x)</code>. And the decision bounday is given by <code>P(Y == 1 | x1, x2) = 0.5</code>. <br/> 
+	Above this decision boundary, we classify it as positive, and otherwise, classify it as negative.</p>
+	<p>One way to train the model is to use gradient descent method, which is the method used in this simulation.
+	</p>
+	<hr/>
+	<h2>Algorithm</h2>
+	<p>TODO: add derivation of the learning algorithm.</p>
+	<hr/>
+	<div id="the_simulation">
+		<h2>The Simulation</h2>
+		<div id="container"></div>
+		<p>Epoch: <span id="counter"></span></p>
+	</div>
+	
+	<div id="the_data">
+		<h2>Training Data Set</h2>
+		<div id="table"></div>
+	</div>
+</body>
+</html>

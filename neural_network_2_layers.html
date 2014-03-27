@@ -1,0 +1,630 @@
+<!DOCTYPPE html>
+<html>
+<head>
+	<title>Demonstration of How A Two Layer Neural Network Learns to Fit a Univariate Function</title>
+	<script src="./jquery.js"></script>
+	<script src="./highcharts.src.js"></script>
+	<script src="./graph_util.js"></script>
+	<script src="./rnd.js"></script>
+	<script type="text/javascript">
+
+	// getObjectiveFunction returns the function that we are trying to learn, along with its
+	// domain
+	var getObjectiveFunction = function() {
+		return {
+			func: function(x) {
+				var y = Math.pow(x, 5) / 5 + Math.pow(x, 4)/40 - 27*Math.pow(x, 3)/100 - 9*Math.pow(x, 2)/2000 + 81*x/1250;
+				return y;
+			},
+			range: [-1, 1]
+		}
+	}
+	
+	// sampleFunction returns a list of [x, y] values by repeatedly apply x value as an argument to
+	// func to obtain y. The range and increment of x is specified by range and resolution.
+	var sampleFunction = function(func, range, resolution) {
+		var samples = [];
+		for (var x = range[0]; x < range[1]; x += resolution) {
+			var y = func(x);
+			samples.push([x, y]);
+		}
+		return samples;
+	}
+
+	// twoLayerNeuralNetwork Creates a two layer neural network object.
+	var twoLayerNeuralNetwork = function(input_size, hidden_size) {
+		// utility functions
+		function sign(x) {
+			if (typeof x !== 'number') {
+				console.log("Expected number: " + x)
+			}
+			if (x < 0) {
+				return -1;
+			} else if (x > 0) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+		
+		// Weights of the neural network stored in a large vector.
+		var weights = [];
+		// layer sizes;
+		var input_layer_size = input_size;
+		var hidden_layer_size = hidden_size;
+		// Size of weights.
+		var totalNumberOfParameters = function() {
+			return input_layer_size * hidden_layer_size + hidden_layer_size + 1;
+		}
+		// Randomly initialize the neural network.
+		var randomInit = function() {
+			var rng = $RND.uniform_rng();
+			for (var i = 0; i < totalNumberOfParameters(); ++i) {
+				weights[i] = rng();
+			}
+			// Ngyuen-Widrow Initialization, 
+			// Ref: D. Ngyuen, B. Widrow,
+			// Improving the Learning Speed of 2-Layer Neural Networks by Choosing Initial Values of the Adaptive Weights.
+			var uf = unflattenWeights(weights);
+			var hidden_layer = uf.h;
+			for (var h = 0; h < hidden_layer_size; ++h) {
+				hidden_layer[h][0] = 0.7 * hidden_layer_size;
+			}
+			weights = flattenWeights(hidden_layer, uf.o);
+		}
+		// Flatten the hidden layer and output layer weights into one single vector
+		var flattenWeights = function(hidden_layer, output_layer) {
+			var w = [];
+			var w_i = 0;
+			for (var h = 0; h < hidden_layer_size; ++h) {
+				for (var i = 0; i < input_layer_size; ++i) {
+					w[w_i++] = hidden_layer[h][i];
+				}
+			}
+			for (var h = 0; h < hidden_layer_size+1; ++h) { // Add 1 for output bias
+				w[w_i++] = output_layer[h];
+			}
+			return w;
+		}
+		// Extract the hidden layer and output layer from w which has been encoded using flattenWeights.
+		var unflattenWeights = function(w) {
+			var hidden_layer = [];
+			var w_i = 0;
+			for (var h = 0; h < hidden_layer_size; ++h) {
+				hidden_layer[h] = [];
+				for (var i = 0; i < input_layer_size; ++i) {
+					hidden_layer[h][i] = w[w_i++]; 
+				}
+			}
+			var output_layer = [];
+			for (var h = 0; h < hidden_layer_size+1; ++h) { // Add 1 for output bias
+				output_layer[h] = w[w_i++];
+			}
+			return {
+				h: hidden_layer,
+				o: output_layer,
+			};
+		}
+		var getHiddenLayerWeight = function(h) {
+			var w = [];
+			var ind = h * input_layer_size;
+			// Expected bias in the input
+			for (var i = 0; i < input_layer_size; ++i) {
+				w[i] = weights[ind++];
+			}
+			return w;
+		}
+		var getOutputLayerWeight = function() {
+			var w = [];
+			var ind = input_layer_size * hidden_layer_size;
+			// Note add 1 for the bias.
+			for (var i = 0; i < hidden_layer_size + 1; ++i) {
+				w[i] = weights[ind++];
+			}
+			return w;
+		}
+		var hiddenNeuronCombine = function(x, w) {
+			// currently uses summation as the combination function,
+			// assuming bias is already present in x as the last value.
+			var s = 0;
+			for (var i = 0; i < x.length; ++i) {
+				s += x[i] * w[i];
+			}
+			return s;
+		}
+		var hiddenNeuronActivate = function(x) {
+			// currently uses sigmoid activation
+			return 1.0 / (1.0 + Math.exp(-x));
+		}
+		var outputNeuronCombine = function(h, w0) {
+			return hiddenNeuronCombine(h, w0);
+		}
+		var outputNeuronActivate = function(x) {
+			return x;
+		}
+		// Feed forward calculation to retrieve hidden units and output units activations.
+		var feedForward = function(sample) {
+			var h_activation = [];
+			// Input to hidden
+			var x = sample;
+			for (var h = 0; h < hidden_layer_size; ++h) {
+				var h_w = getHiddenLayerWeight(h);
+				h_activation[h] = hiddenNeuronActivate(hiddenNeuronCombine(x, h_w));	
+			}
+			h_activation.push(1);  // Add bias.
+			// Hidden to output
+			var o_w = getOutputLayerWeight();
+			var y = outputNeuronActivate(outputNeuronCombine(h_activation, o_w));
+			return {
+				p: y,
+				h: h_activation,
+			};
+		}
+		// Adjust the hidden layer activation using the output layer coefficient.
+		var getRealHiddenOutput = function(h) {
+			var w = getOutputLayerWeight();
+			var h_adj = [];
+			for (var i = 0; i < h.length; ++i) {
+				h_adj[i] = h[i] * w[i];
+			}
+			return h_adj;
+		}
+		// Returns the prediction output by the network for the given input x.
+		var predict = function(x) {
+			if (x.length != input_layer_size) {
+				console.log("Error: expected sample to consists of " + input_layer_size + 
+					" elements but got only: " + x.length);
+			}
+			var result = feedForward(x);
+			return result.p;
+		}
+		// Derivative of the cost function with respect to prediction, dCost/dp
+		var dCost_dp = function(y, p) {
+			// current uses square loss: cost(y, p) = 0.5 * (y - p) ^ 2
+			// therefore, dCost/dy = -(y - p);
+			return -(y - p);
+		}
+		var dp_da0 = 1.0;	// activation is the same as prediction.
+		// Derivative of the activation with respect to output combination
+		var da0_ds0 = function(p, h) {
+			// Since we are using linear output, p = a, therefore dp/da = 1
+			return 1.0;
+		}
+		// Derivative of the combination with respect to its input (hidden activation).
+		// @Note: returns a vector.
+		var ds0_dw0 = function(h) {
+			// Here we are using summation, s0 = sum(h_j * w_0_j), 0 <= j <= h_size,
+			// therefore ds0/dw0j = h_j
+			return h;
+		}
+		// Derivative of the combination with respect to its j-th hidden acivation.
+		// @Note: returns a vector.
+		var ds0_dh = function(h, j) {
+			// Here we are using summation, s0 = sum(h_j, w_0_j), 0 <= j <= h_size,
+			// therefore ds0/dh_j = w_0_j
+			return getOutputLayerWeight()[j];
+		}
+		var dh_dah = 1.0;  // hidden output equals to hidden activation
+		// Derivative of the hidden activation with its input (hidden combination)
+		var dah_dsh = function(h, j) {
+			// Here we are using the sigmoid function, therefore its derivation is
+			// dsig/dx = (sig)(1 - sig)
+			return h[j] * (1 - h[j]);
+		}
+		// Derivative of the i-th hidden combination with respect to the input x.
+		// @Note: returns a vector.
+		var dsh_dw_i = function(x) {
+			// Here we are using summation, sh = sum(x_j * w_i_j), 0 <= j <= h_size,
+			// therefore dsh/dw_i_j = x_j
+			return x;
+		}
+		// Dot product of scalar and vector.
+		var scalarDotVector = function(s, v) {
+			var w = [];
+			for (var i = 0; i < v.length; ++i) {
+				w[i] = v[i] * s;
+			}
+			return w;
+		}
+		// Calculates the sum of two vectors.
+		var sumVector = function(u, v) {
+			var s = [];
+			for (var i = 0; i < u.length; ++i) {
+				s[i] = u[i] + v[i];
+			}
+			return s;
+		}
+		// Calculates the gradiet of the network.
+		var dCost_dW = function(y, p, h, x) {
+			// dCost/dw0 = dC/dp * dp/da0 * da0/ds0 * ds0/dw0
+			var dCost__dp = dCost_dp(y, p);
+			var dp__da0 = dp_da0;
+			var da0__ds0 = da0_ds0(p, h);
+			var dCost__ds0 = dCost__dp * dp__da0 * da0__ds0;
+			var ds0__dw0 = ds0_dw0(h);
+			var dCost__dw0 = scalarDotVector(dCost__ds0, ds0__dw0);
+			
+			// dCost/dw_j = dCost/ds0 * ds0/dh_j * dh_j/dah_j * dah_j/dsh * dsh/d_wj
+			var dCost__dwj = [];
+			for (var j = 0; j < hidden_layer_size; ++j) {
+				var ds0__dh_j = ds0_dh(h, j);
+				var dh_j__dah_j = dh_dah;
+				var dah_j__dsh =  dah_dsh(h, j);
+				var dCost__sh = dCost__ds0 * ds0__dh_j * dh_j__dah_j * dah_j__dsh;
+				var dsh__dwj = dsh_dw_i(x);
+				dCost__dwj[j] = scalarDotVector(dCost__sh, dsh__dwj);
+			} 
+			//console.log(flattenWeights(dCost__dwj, dCost__dw0))
+			return flattenWeights(dCost__dwj, dCost__dw0);
+		}
+		// Weight Update using the Resilient Backpropagation algorithm.
+		var rprop = function(init_learning_rate, max_learning_rate, min_learning_rate, eta_plus, eta_minus) {
+			var delta_t = [];
+			var grad_t_minus_1 = [];
+			for (var i = 0; i < totalNumberOfParameters(); ++i) {
+				delta_t[i] = init_learning_rate;
+				grad_t_minus_1[i] = 0;
+			}
+			var prev_error = Number.MAX_VALUE;
+			return function(grad_t, error) {
+				for (var i = 0; i < totalNumberOfParameters(); ++i) {
+					var prev_grad = grad_t_minus_1[i];
+					var cur_grad = grad_t[i]; 
+					if (prev_grad * cur_grad > 0) {
+						delta_t[i] = Math.min(delta_t[i]*eta_plus, max_learning_rate);
+						var delta_w = -1.0 * sign(cur_grad) * delta_t[i];
+						weights[i] += delta_w;
+						grad_t_minus_1[i] = cur_grad;
+					} else if (prev_grad * cur_grad < 0) {
+						// Weight-Backtrack for iRprop+
+						if (error > prev_error) {
+							var delta_w = 1.0 * sign(cur_grad) * grad_t_minus_1[i];
+							weights[i] -= delta_w;
+						}
+						delta_t[i] = Math.max(delta_t[i]*eta_minus, min_learning_rate);
+						grad_t_minus_1[i] = 0.0;
+					} else {
+						var delta_w = -1.0 * sign(cur_grad) * delta_t[i];
+						weights[i] += delta_w;
+						grad_t_minus_1[i] = cur_grad;
+					}
+				}
+				prev_error = error;
+			}
+		}
+		// Train the neural network using the given training data.
+		var train = function(samples, max_epoch, costs, validation_samples, validation_costs) {
+			var updater = rprop(0.1, 50.0, 0.000001, 1.2, 0.5);
+			for (var epoch = 0; epoch < max_epoch; ++epoch) {
+				// calculates the gradients
+				var gradients = []
+				var is_first = true;
+				var cost = 0.0;
+				for (var i = 0; i < samples.length; ++i) {
+					var x = samples[i].x;
+					var y = samples[i].y;
+					var result = feedForward(x);
+					var cur_grad = dCost_dW(y, result.p, result.h, x);
+					if (is_first) {
+						gradients = cur_grad;
+						is_first = false; 
+					} else {
+						gradients = sumVector(gradients, cur_grad);
+					}
+					
+					cost += 0.5 * Math.pow(y - result.p, 2);
+				}
+				// calculate the training and validation errors
+				if (costs !== undefined) {
+					costs.push(cost/samples.length);
+				} else {
+					console.log("Training cost for epoch " +  epoch + ": " + cost);
+				}
+				if (validation_samples !== undefined && validation_costs !== undefined) {
+					var validation_error = 0;
+					for (var j = 0; j < validation_samples.length; ++j) {
+						var x = validation_samples[j].x;
+						var y = validation_samples[j].y;
+						var p = predict(x);
+						validation_error += 0.5 * Math.pow(y - p, 2);
+					}
+					validation_costs.push(validation_error/validation_samples.length);
+				}
+				// update the model
+				updater(gradients, costs);
+			}
+		}
+		// Unit test for dCost_dW
+		var test_dCost_dW = function() {
+			// DCost_dW can be approximated using 
+			// dCost/DW = ( Cost(W + epsilon) - Cost(W - epsilon) ) / (2*epsilon)
+			var epsilon = 0.00000001;
+			var limit = epsilon;
+			var y = 1;
+			var x = [];
+			var rng = $RND.uniform_rng();
+			for (var i = 0; i < input_layer_size - 1; ++i) {
+				x.push(rng());
+			}
+			x.push(1);
+			
+			x = [-0.232, 1.1, 1];
+			
+			var result = feedForward(x);
+			var cur_grad = dCost_dW(y, result.p, result.h, x);
+			var all_correct = true;
+			for (var i = 0; i < totalNumberOfParameters(); ++i) {
+				var old_weight = weights[i];
+				weights[i] = old_weight + epsilon;
+				var cost_plus = 0.5 * Math.pow(y - predict(x), 2);
+				weights[i] = old_weight - epsilon;
+				var cost_minus = 0.5 * Math.pow(y - predict(x), 2);
+				var grad = (cost_plus - cost_minus) / (2 * epsilon);
+				weights[i] = old_weight;
+				var diff = Math.abs(grad - cur_grad[i]);
+				if (!isNaN(diff) && diff > limit) {
+					console.log("Expected gradient for " + i + " to be " + grad + 
+						", but got " + cur_grad[i] + ", a difference of " + diff);
+					all_correct = false;
+				}
+			}
+			return all_correct;
+		}
+		// Wrapper function for setting up the test environment.
+		var test_wrapper = function() {
+			var old_weights;
+			var old_input_size;
+			var old_hidden_size;
+			
+			var test_init = function() {
+				// Backup current configuration.
+			    old_weights = weights;
+			    old_input_size = input_layer_size;
+			    old_hidden_size = hidden_layer_size;
+				input_layer_size = 3;
+				hidden_layer_size = 2;
+				weights = [
+					// hidden layer 0
+					0.1, 0.2, 0.3,
+					// hidden layer 1
+					0.4, 0.5, 0.6,
+					// output layer
+					0.7, -0.8, 0.5,
+					];
+				}
+			var test_destroy = function() {
+				// Restore configuration.
+				weights = old_weights;
+				input_layer_size = old_input_size;
+				hidden_layer_sizse = old_hidden_size;
+			}
+			return {
+				init: test_init,
+				destroy: test_destroy,
+			}
+		}
+		// Unit test for feedForward
+		var test_feedForward = function() {
+			var all_passed = true;
+			var sigmoid = function(x) {
+				return 1.0 / (1.0 + Math.exp(-x));
+			}
+			var test_cases = [
+				[
+					[1, 1, 1],
+					sigmoid(0.1 + 0.2 + 0.3) * 0.7 + sigmoid(0.4 + 0.5 + 0.6) * -0.8 + 0.5,
+				],
+				[
+					[0, 0, 1],
+					sigmoid(0 + 0 + 0.3) * 0.7 + sigmoid(0 + 0 + 0.6) * -0.8 + 0.5,
+				],
+				[
+					[0, 1, 1],
+					sigmoid(0 + 0.2 + 0.3) * 0.7 + sigmoid(0 + 0.5 + 0.6) * -0.8 + 0.5,
+				],
+				[
+					[1, 0, 1],
+					sigmoid(0.1 + 0 + 0.3) * 0.7 + sigmoid(0.4 + 0 + 0.6) * -0.8 + 0.5,
+				],
+			]
+			for (var i = 0; i < test_cases.length; ++i) {
+				var r = predict(test_cases[i][0]); 
+				var expected = test_cases[i][1];
+				if (r != expected) {
+					console.log("Failed for test case #" + i + " expected " + expected + 
+						", but got " + r)
+					all_passed = false;
+				}
+			}
+			return all_passed;
+		}
+		// All Unit tests.
+		var unitTests = function() {
+			var wrapper = test_wrapper();
+			wrapper.init();
+			var test_cases = [test_feedForward, test_dCost_dW];
+			var tests_failed = 0;
+			for (var i = 0; i < test_cases.length; ++i) {
+				if (!(test_cases[i]())) {
+					tests_failed++;
+				}
+			}
+			wrapper.destroy();
+			return tests_failed;
+		}
+		var network = {
+			init: randomInit,
+			unit_tests: unitTests,
+			predict: predict,
+			train: train,
+			feedForward: feedForward,
+			realHiddenOutput: getRealHiddenOutput,
+		}
+		return network;
+	}
+
+	$(document).ready(function(){
+		// Run unit tests to verify the correctness of the implementation.
+		var do_tests = true;
+		if (do_tests) {
+			var test_network = twoLayerNeuralNetwork(2, 3);
+			var test_cases_failed = test_network.unit_tests();
+			if (test_cases_failed != 0) {
+				console.log("Number of unit tests failed is " + test_cases_failed);
+			}	
+		}
+		
+		// Retrieve the function to learn and obtain samples from it.
+		var objective = getObjectiveFunction();
+		var samples = sampleFunction(objective.func, objective.range, 0.07);
+		var validation_samples = sampleFunction(objective.func, [-0.99, 0.99], 0.03);
+		
+		// Plot the objective function.
+		var chart = new Highcharts.Chart({
+			chart: {
+				renderTo: 'objective',
+				type: 'line',
+			},
+			title: {
+				text: 'Objective Function Vs Neural Network Approximation',
+			},
+			xAxis: {
+				title: {
+					text: 'x'
+				},
+			},
+			yAxis: [{
+				title: {
+					text: 'Y'
+				},
+			}],
+			series: [{
+				name: 'Objective Function',
+				data: samples,
+			},{
+				name: 'Validation Function',
+				data: validation_samples,
+			}],
+		});
+		
+		// Create the neural network.
+		var input_layer_size = 2;
+		var hidden_layer_size = 10;
+		var num_epochs = 1000;
+		var network = twoLayerNeuralNetwork(input_layer_size, hidden_layer_size);
+		network.init();
+		
+		// convert data to appropriate format for network training.
+		var network_samples = [];
+		for (var i = 0; i < samples.length; ++i) {
+			var x = samples[i][0];
+			var y = samples[i][1];
+			network_samples[i] = {x: [x, 1], y: y};
+		}
+		var network_validation_samples = [];
+		for (var i = 0; i < validation_samples.length; ++i) {
+			var x = validation_samples[i][0];
+			var y = validation_samples[i][1];
+			network_validation_samples[i] = {x: [x, 1], y: y};
+		}
+		
+		// train the neural network.
+		var training_costs = [];
+		var validation_costs = [];
+		network.train(network_samples, num_epochs, training_costs, network_validation_samples, validation_costs);
+
+		// retrieve predictions from neural network.
+		var get_predictions = function(network, network_samples) {
+			var output = [];
+			var components = [];
+			for (var i = 0; i < hidden_layer_size; ++i) {
+				components[i] = [];
+			}
+			var cost = 0;
+			for (var i = 0; i < network_samples.length; ++i) {
+				var x = network_samples[i].x;
+				var y = network_samples[i].y;
+				var r = network.feedForward(x);
+				output.push([x[0], r.p]);
+				
+				// Add hidden layer outputs.
+				var h_adj = network.realHiddenOutput(r.h);
+				for (var j = 0; j < hidden_layer_size; ++j) {
+					components[j].push([x[0], h_adj[j]]);
+				}
+				
+				cost += 0.5 * Math.pow(y - r.p, 2);
+			}
+			return {
+				series: output,
+				components: components,
+				cost: cost,
+			};
+		}
+		
+		// Plot the neural network approximation along with it's hidden unit approximation.
+		var pred_result = get_predictions(network, network_samples);
+		chart.addSeries({name: 'network-approximation', data: pred_result.series});
+		for (var i = 0; i < hidden_layer_size; ++i) {
+			chart.addSeries({
+				name: 'comp-' + i, 
+				data: pred_result.components[i],
+				visible: false,
+			});
+		}
+		
+		// Plot the learning curve, after subsampling to make the plot easier to plot.
+		var training_errors = [];
+		var validation_errors = [];
+		var interval_size = Math.round(training_costs.length / 50);
+		for (var i = 0; i < training_costs.length; i+=interval_size) {
+			training_errors.push([i, training_costs[i]]);
+			validation_errors.push([i, validation_costs[i]]);
+		}
+		var learning_curve_chart = new Highcharts.Chart({			
+			chart: {
+				renderTo: "learning_curve",
+				type: 'line',
+			},
+			title: {
+				text: 'Learning Curve',
+			},
+			xAxis: {
+				title: {
+					text: 'Epoch',
+				},
+				tickInterval: interval_size,
+			},
+			yAxis: {
+				title: {
+					text: 'Error',
+				},
+				type: 'logarithmic'
+			},
+			series: [{
+				name: 'Training Error',
+				data: training_errors,
+				pointStart: 1
+			},{
+				name: 'Validation Error',
+				data: validation_errors,
+				pointStart: 1
+			}]
+		});
+	});
+	</script>
+</head>
+<body>
+	<h1>How A Two Layer Neural Network Learns to Fit a Univariate Function</h1>
+	<hr/
+	><h2>The Model</h2>
+	<p>
+	</p>
+	<h2>Algorithm</h2>
+	<p>
+	</p>
+	<h2>The Graph</h2>
+	<div id="objective" style='width:100%; height: 600px;'></div>
+	<div id="learning_curve" style="width:100%; height: 600px;"></div>
+</body>
+</html>

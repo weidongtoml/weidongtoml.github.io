@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+	<head>		
+		<title>Rejection Sampling Demonstration</title>
+		<script src="./jquery.js"></script>
+		<script src="./highcharts.src.js"></script>
+		<script src="./rnd.js"></script>
+		<script src="./graph_util.js"></script>
+		<script type="text/javascript">	
+			// Probabilty PDF to be sampled.
+			var P = function() {
+				var g1 = $RND.gaussian_pdf(0.8, 0.1);
+				var g2 = $RND.gaussian_pdf(0.3, 0.2);
+				return function(x) {
+					return g1(x) + g2(x);
+			}}();
+		
+			// Probabilty PDF used to sample P(x)
+			var Q = function() {	
+				var q = $RND.gaussian_pdf(0.7, 0.4);
+				var M = 5;
+				return function(x) {
+					return  q(x)* M;
+			}}();
+			// Sampler from generating random numbers according to Q.
+			var Q_sampler = $RND.gaussian_rng(0.5, 0.3);
+		
+			// Generates the probability distributions.
+			var g_interval = 0.02;
+			var idx_array = [];
+			var dim = Math.round(1 / g_interval);
+			for (var i = 0; i < dim; i++) {
+				idx_array.push(i* g_interval);
+			}
+			var multi_modal_gaussian = convertToCoordinates(idx_array, idx_array.map(P));
+			var gaussian_approximate = convertToCoordinates(idx_array, idx_array.map(Q));
+			
+			var plot_charts = function(doc_id) {
+				var chart = new Highcharts.Chart({
+					chart: {
+						renderTo: doc_id,
+						type: 'line',
+					},			
+					title: {
+						text: 'Rejection Sampling',
+					},
+					xAxis: {
+						title: {
+							text: 'X'
+						},
+						max: 1.0,
+						min: 0.0,
+					},
+					yAxis: [{
+						title: {
+							text: 'Frequency'
+						},
+						min: 0.0,
+					}],
+					series: [{
+						name: 'P(x)',
+						data: multi_modal_gaussian,
+					},{
+						name: 'Q(x)',
+						data: gaussian_approximate,
+					}, {
+						name: 'Selected Samples',
+						data: [],
+						color: 'green',
+						type: 'scatter',
+						marker: {
+							symbol: 'circle',
+						},
+					}, {
+						name: 'Rejected Samples',
+						data: [],
+						color: 'red',
+						type: 'scatter',
+						marker: {
+							symbol: 'circle',
+						},
+					}, {
+						name: 'Current Sampling Line',
+						data: [],
+					}],
+				});
+				return chart;
+			};
+			
+			// Creates a rejection sampler given the parameters:
+			// p: P(X) is the distribution function of the Probability distribution we want to sample from.
+			// q: Q(X) is the distribution function of a Probability distribution that is easy to sample.
+			// q_sampler: Sampler that returns a sample according to Q(X)
+			// graph: the graph to display the sampling process.
+			var create_rejection_sampler = function(p, q, q_sampler, graph) {
+				var P = p;
+				var Q = q;
+				var Q_sampler = q_sampler;
+				var plot = graph;
+				var U_sampler = $RND.uniform_rng();
+				return function() {
+					var u = U_sampler();
+					var x = Q_sampler();
+					
+					//outside the graph, skip this sample.
+					while (x < 0 || x > 1) {
+						x = Q_sampler();
+					}
+					
+					var P_y = P(x);
+					var Q_y = Q(x);
+					
+					var u_y = u * Q_y;
+					var line_P_y = [{x: x, y: 0}, {x: x, y: Q_y}];
+					
+					//Display Current Rejection Process.
+					plot.series[4].setData(line_P_y);
+					
+					if (u_y < P_y) {
+						//accept this sample that falls within P(x)
+						plot.series[2].addPoint({x: x, y: u_y});
+						return true;
+					} else {
+						//rejects this sample that falls outside P(x)
+						plot.series[3].addPoint({x: x, y: u_y});
+						return false;
+					}
+				};
+			};
+			
+			$(document).ready(function(){
+				var chart_obj = plot_charts("chart");
+				var rejection_sampler = create_rejection_sampler(P, Q, Q_sampler, chart_obj);
+				
+				var accepted_samples = 0;
+				var rejected_samples = 0;
+				var total_epochs = 1000;
+				
+				var simulation_loop = function() {
+					var is_accepted = rejection_sampler();
+					accepted_samples += (is_accepted ? 1 : 0);
+					rejected_samples += (is_accepted ? 0 : 1);
+					var acc_rate = Math.floor(accepted_samples * 100 / (accepted_samples + rejected_samples));
+					$('#acceptance').html(''+acc_rate+'%');
+					if (total_epochs-- > 0) {
+						setTimeout(simulation_loop, 100);
+					}
+				};
+				
+				simulation_loop();
+			});
+		</script>
+	</head>
+	<body>
+		<h1>Rejection Sampling</h1>
+		<p>by Weidong Liang</p>
+		<p>Beijing, 2014</p>
+		<hr/>
+		<h2>Introduction</h2>
+		<p>In rejection sampling, to sample from distribution P(x) (which has the property that direct drawing sample from it is very hard) we can draw a sample X1 from the proposed distribution Q(x) (whose samples can be easily generated) and use the rejection rule u &lt; P(X1)/ (M*Q(X1)) to accept or reject sample X1, where</p>
+		<ul>
+			<li>u is a sample drawn uniformly from [0, 1),</li>
+			<li>M is a constant that satisfies:
+				<ul>
+					<li> M &gt; 0</li>
+					<li> for any x, we have p(x) &lt;= M* q(x)</li>
+				</ul>
+			</li>
+		</ul>
+		<hr/>
+		<h2>Simulation</h2>
+		<p>In the following simulation, we use rejection sampling to draw samples from a bi-modal Gaussian distribution. 
+			The red curve is our Q(x), and the blue curve is our P(x); we first draw a sample from Q(x), then generated a sample u from Unif(0, 1),
+			we normalize P(X1) using dividing Q(X1)/P(X1)/(M*Q(X1)) so that its range is within [0, 1], then we compare u against Q(X1)/P(X1)/(M*Q(X1)),
+			it u is less than it, then the current sample falls within Q(X1), we accept sample X1; otherwise, we reject it.
+		</p>
+		<div id="chart"></div>
+		<p>Acceptance Rate: <span id="acceptance"></span>.</p>
+		<hr/>
+		<h2>The Algorithm</h2>
+		<p>RejectionSampling ( p(x), q(x), q_sampler() )<br/>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Returns a sample of distribution P(x) per invokation</p>
+		<ul>
+			<li>X1 &lt;- q_sampler()  // draw a sample X1 from q_sampler, which is easy to implement.</li>
+			<li>u &lt;- uniform(0, 1)</li>
+			<li>if u &lt P(X1) / (M*Q(X1)) then return X1</li>
+			<li>else invoke RejectionSampling</li>
+		</ul>
+		<hr/>
+		<h2>Notes</h2>
+		<p>Rejection sampling required the specification of the proposal distribution Q(x), and the constant M. If M is too large, we would have to reject a of the samples (with a acceptance rate close to 1/M). If M is too small, we run the risk of not satisfying its second condition. Clearly, the efficient use of this algorithm required appropriate specification of Q(x) and M. Unlike the simulation example given, we might visually select P(x) and M, or high-dimensional distribution, this would be impossible.
+		</p>
+	</body>
+</html>

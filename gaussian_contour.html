@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Demonstration of How to Graw a Bivariate Normal Distribution on Contour Map</title>
+		<script src="./jquery.js"></script>
+		<script src="./highcharts.src.js"></script>
+		<script src="./graph_util.js"></script>
+		<script type="text/javascript">	
+			//Bivariate Normal Distribution PDF:
+			//	z = f(X) = 1.0/(2*pi*|Sigma|) * exp(-0.5 * (X - Mu_x)^T . Sigma^-1 . (X - Mu_x)
+			//where
+			//	X = [x, y]^T
+			// Sigma = [ 		sigma_x,			rho * sigma_x * sigma_y;
+			//			 rho * sigma_x * sigma_y,			sigma_y			]
+			// |Sigma| is the determinate of the variance matrix Sigma
+			// s.t. rho > 0 && rho <= 1
+			// Denote:
+			//	X = (x - mu_x)/ sigma_x, Y = (y - mu_y) / sigma_y,
+			//  K = 2.0 * pi * |Sigma| = 2.0*pi*sigma_x*sigma_y*sqrt(1-rho^2)
+			//  L = 2.0 * ( 1 - rho^2)
+			// and Solve the PDF for Y, we get:
+			//	Y0 = rho*X + sqrt((rho^2 - 1) * X^2 - L * ln(Z/K))
+			//	Y1 = rho*X + sqrt((rho^2 - 1) * X^2 - L * ln(Z/K))
+			// 
+			// To plot the contour line of height Z, we iterate through the X values, solve for y and get (x_i, y_i)
+			//	as a coordinate on this contour line, then join them together.
+			// Plotting many of the contour line result in a contour map of the bivariate normal distribution.
+			var gaussian_2d_pdf = function(mean_x, mean_y, stddev_x, stddev_y, scale_factor) {
+				if (scale_factor <= 0 || scale_factor > 1) {
+					throw "Error: invalid parameter scale_factor=" + scale_factor + " which must in the range of (0, 1]";
+				}
+				var mu_x = mean_x;
+				var mu_y = mean_y;
+				var sigma_x = stddev_x;
+				var sigma_y = stddev_y;
+				var rho = scale_factor;
+				var rho_squared = rho * rho;
+				var K = 2.0 * Math.PI * sigma_x * sigma_y * Math.sqrt(1 - rho_squared);
+				var L = 2.0 * (1 - rho_squared);
+				return function(x, y) {
+					var X = 1.0 * (x - mu_x) / sigma_x;
+					var Y = 1.0 * (y - mu_y) / sigma_y;
+					return K * Math.exp(-1.0/L * (X*X + Y*Y - 2*rho*X*Y));
+				};
+			};
+			
+			var y_solver = function(mean_x, mean_y, stddev_x, stddev_y, scale_factor) {
+				var mu_x = mean_x;
+				var mu_y = mean_y;
+				var sigma_x = stddev_x;
+				var sigma_y = stddev_y;
+				var rho = scale_factor;
+				var rho_squared = rho * rho;
+				var K = 2.0 * Math.PI * sigma_x * sigma_y * Math.sqrt(1 - rho_squared);
+				var L = 2.0 * (1 - rho_squared);
+				return function (z, x) {
+					var X = 1.0 * (x - mu_x) / sigma_x;
+					var rho_X = rho * X;
+					var det = (rho_squared - 1) * X*X - L * Math.log(z/K);
+					if (det < 0) {
+						return false;
+					}
+					var snd_part = Math.sqrt(det);
+					var Y0 = rho_X + snd_part;
+					var Y1 = rho_X - snd_part;
+					var y0 = Y0 * sigma_y + mu_y;
+					var y1 = Y1 * sigma_y + mu_y;
+					return [[x, Math.max(y0, y1)], [x, Math.min(y0,y1)]];
+				}
+			};
+			
+			
+			var get_contour = function (z, solver, x_start, x_end, x_step, mu_x, sigma_x) {
+				var contour = [];
+				var neg_contour = [];
+				for (var i = x_start; i <= x_end; i += x_step) {
+					var x_i = mu_x + sigma_x + i;
+					var xy_i = solver(z, x_i);
+					if (xy_i !== false) {
+						contour.push(xy_i[0]);
+						neg_contour.push(xy_i[1]);
+					}
+				}
+				while(neg_contour.length > 0) {
+					var v = neg_contour.pop();
+					contour.push(v);
+				}
+				contour.push(contour[0]);
+				return contour;
+			}
+			
+			// TODO(weidoliang): This interface is terrible, we should combine it with get_contour and clean it up.
+			var get_line = function(solver, pdf, m, mu_x, sigma_x, mu_y, sigma_y) {
+				var z = pdf(m * sigma_x + mu_x, m * sigma_y + mu_y);
+				var contour = get_contour(z, solver, -m, m, 0.04, mu_x, sigma_x);
+				return {name: 'z:' + Math.round(z*10000)/10000, data: contour};
+			};
+		
+			var plot_charts = function(doc_id) {
+				var chart = new Highcharts.Chart({
+					chart: {
+						renderTo: doc_id,
+						type: 'line',
+					},			
+					title: {
+						text: 'Bivariate Gaussian Distribution Contour Graph',
+					},
+					xAxis: {
+						title: {
+							text: 'X'
+						},
+						max: 2.0,
+						min:-1.0,
+					},
+					yAxis: [{
+						title: {
+							text: 'Y'
+						},
+						max: 2.0,
+						min:-1.0,
+					}],
+					series: [],
+				});
+				return chart;
+			};
+			
+		
+			$(document).ready(function(){
+				var chart_obj = plot_charts("chart");
+				var mu_x = 0.5;
+				var sigma_x = 0.2;
+				var mu_y = 0.5;
+				var sigma_y = 0.3;
+				var rho = 0.8;
+				// Generates contour lines:
+				var solver = y_solver(mu_x, mu_y, sigma_x, sigma_y, rho);
+				var pdf = gaussian_2d_pdf(mu_x, mu_y, sigma_x, sigma_y, rho);
+				
+				for (var i = 0.8; i <= 5; i *= 1.5) {
+					var contour = get_line(solver, pdf, i, mu_x, sigma_x, mu_y, sigma_y);
+					chart_obj.addSeries(contour);
+				}
+			});
+			
+		</script>
+	</head>
+	<body>
+		<h1>How to Plot Bivariate Gaussian Contour Graph</h1>
+		<hr/>
+		<h2>The Graph</h2>
+		<div id="chart" style='width:600px; height:600px;'></div>
+		<h2>Algorithm</h2>
+		<p>Bivariate Normal Distribution PDF:<br/>
+				z = f(X) = 1.0/(2*pi*|Sigma|) * exp(-0.5 * (X - Mu_x)^T . Sigma^-1 . (X - Mu_x)<br/>
+			where<br/>
+				X = [x, y]^T<br/>
+			 Sigma = [ 		sigma_x,			rho * sigma_x * sigma_y;<br/>
+						 rho * sigma_x * sigma_y,			sigma_y	];<br/>		
+			 |Sigma| is the determinate of the variance matrix Sigma<br/>
+			 s.t. rho &gt; 0 && rho &ge; 1<br/>
+			 Denote:<br/>
+				X = (x - mu_x)/ sigma_x, Y = (y - mu_y) / sigma_y,<br/>
+			  K = 2.0 * pi * |Sigma| = 2.0*pi*sigma_x*sigma_y*sqrt(1-rho^2)<br/>
+			  L = 2.0 * ( 1 - rho^2)<br/>
+			 and Solve the PDF for Y, we get:<br/>
+				Y0 = rho*X + sqrt((rho^2 - 1) * X^2 - L * ln(Z/K))<br/>
+				Y1 = rho*X + sqrt((rho^2 - 1) * X^2 - L * ln(Z/K))<br/>
+			 <br/>
+			 To plot the contour line of height Z, we iterate through the X values, solve for y and get (x_i, y_i)
+				as a coordinate on this contour line, then join them together.
+			 Plotting many of the contour line result in a contour map of the bivariate normal distribution.
+		</p>
+	</body>
+</html>
