@@ -3,7 +3,7 @@
 	<head>		
 		<title>Rejection Sampling Demonstration</title>
 		<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
-		<script type="text/javascript" src="http://code.highcharts.com/2.2/highcharts.js"></script>
+		<script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
 		<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 		<link href='../css/shCore.css' rel='stylesheet' type='text/css'></link>
 		<link href='../css/shThemeDefault.css' rel='stylesheet' type='text/css'></link>
@@ -71,6 +71,7 @@
 					plot.series[3].addPoint({x: x, y: u_y});
 					return false;
 				}
+
 			};
 		};
 		
@@ -90,8 +91,7 @@
 			var chart = new Highcharts.Chart({
 				chart: {
 					renderTo: doc_id,
-					type: 'line',
-				},			
+				},
 				title: {
 					text: 'Rejection Sampling',
 				},
@@ -111,9 +111,17 @@
 				series: [{
 					name: 'P(x)',
 					data: multi_modal_gaussian,
+					type: 'line',
+					marker: {
+						enabled: false,
+					},
 				},{
 					name: 'Q(x)',
 					data: gaussian_approximate,
+					type: 'line',
+					marker: {
+						enabled: false,
+					},
 				}, {
 					name: 'Selected Samples',
 					data: [],
@@ -153,7 +161,7 @@
 				var acc_rate = Math.floor(accepted_samples * 100 / (accepted_samples + rejected_samples));
 				$('#acceptance').html(''+acc_rate+'%');
 				if (total_epochs-- > 0) {
-					setTimeout(simulation_loop, 100);
+					setTimeout(simulation_loop, 800);
 				}
 			};
 			

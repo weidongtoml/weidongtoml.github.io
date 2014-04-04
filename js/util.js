@@ -20,3 +20,15 @@ var RenderCodeSection = function(script_id, div_id, start_tag, end_tag) {
 	$('#'+div_id).append('<pre class="brush: js">' + script_val + '</pre>');
 	SyntaxHighlighter.all();
 }
+
+var kHighChart2Colors = [
+   '#4572A7', 
+   '#AA4643', 
+   '#89A54E', 
+   '#80699B', 
+   '#3D96AE', 
+   '#DB843D', 
+   '#92A8CD', 
+   '#A47D7C', 
+   '#B5CA92',
+];
