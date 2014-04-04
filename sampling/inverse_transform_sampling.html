@@ -5,7 +5,15 @@
 	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
 	<script type="text/javascript" src="http://code.highcharts.com/2.2/highcharts.js"></script>
 	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-	<script type="text/javascript">
+	<link href='../css/shCore.css' rel='stylesheet' type='text/css'></link>
+	<link href='../css/shThemeDefault.css' rel='stylesheet' type='text/css'></link>
+	<script type="text/javascript" src="../js/shCore.js"></script>
+	<script type="text/javascript" src="../js/shBrushJScript.js"></script>
+	<script type="text/javascript" src="../js/util.js"></script>
+	<script type="text/javascript" src="./graph_util.js"></script>
+	<script type="text/javascript" id="main_script">
+	// [MainScriptStarts]
+	
 	// Exponential distribution: 
 	// PDF: 
 	//    p(x) = \lambda * exp(\lambda * x)
@@ -44,26 +52,8 @@
 			return sampler;
 		}
 	}
-
-	// Creates a histogram from the given sampler by sampling num_samples of samples from
-	// the sampler, and allocate each sample into one of the num_buckets buckets; after
-	// all the samples are drawn, the frequencies of all the buckets will be normalzed.
-	var CreateHistogramFromSampler = function(sampler, num_samples, num_buckets) {
-		var histogram = [];
-		for (var i = 0; i < num_buckets; ++i) {
-			histogram[i] = 0;
-		}
-		var num_samples_drawn = 0;
-		while (num_samples_drawn++ < num_samples) {
-			var sample = sampler();
-			var bucket_index = Math.floor(sample) % num_samples;
-			histogram[bucket_index]++;
-		}
-		for (var i = 0; i < num_buckets; ++i) {
-			histogram[i] /= num_samples;
-		}
-		return histogram;
-	}
+	
+	// [MainScriptEnds]
 	
 	var PlotChart = function(num_buckets, num_samples, lambda) {
 		// Creates the distribution object
@@ -135,6 +125,8 @@
 		
 		$('#redraw_button').click(function(){redraw_action_handler()});
 		redraw_action_handler();
+		
+		RenderCodeSection('main_script', 'code');
 	});
 	</script>
 </head>
@@ -143,12 +135,14 @@
 	<p>by Weidong Liang</p>
 	<p>Beijing, 2014.04.03</p>
 	<hr/>
+	
 	<h2>Introduction</h2>
 	<p>The inverse transform sampling method is a simple way for generating sample from a distribution, given the inverse of its cummulative distribution function. </p>
 	<p>This sampling method is based on the <a href='http://en.wikipedia.org/wiki/Probability_integral_transform'>probability integral transform</a>; which provides a way to convert a random variable of any given continuous distribution to one that obeys the uniform distribution.
 		The basic idea is to generate a sample from the uniform distribution, and use the inverse of probability integeral transfrom to obtain a sample from the desired distribution.
 	    Specifically, given \( u \sim U(0, 1) \), we return \( x = CDF^{-1}(u) \) as the sample of the distribution D with cummulative distribution function \( CDF(x) \), and \( CDF^{-1}(x) \) is the inverse of \( CDF(x) \).</p>
 	<hr/>
+	
 	<h2>Simulation</h2>
 	<p>For the following simulation, we use the inverse transform sampling to generate samples from the <a href='http://en.wikipedia.org/wiki/Exponential_distribution'>Exponential Distribution</a>, and compare the histogram of these samples with the theoretical probability density function (pdf). </p>
 	<p> The Exponential Distribution has a simple pdf of
@@ -168,7 +162,8 @@
 		<input type='button' value='redraw' id='redraw_button' />
 	</p>	
 	<hr/>
-	<h2>The Algorithm</h2>
+	
+	<h2>Algorithm</h2>
 	<p>InverseTransformSampling( CDF(x) ) &nbsp; // Draw a sample from a distribution that has cummulative distribution function of CDF(x).
 		<ol>
 			<li> u <- U(0, 1)  &nbsp;// generate u from a uniform random distribution [0, 1]</li>
@@ -176,7 +171,12 @@
 			<li> return x </li>
 		</ol>
 	</p>
+	<hr/>	
+	
+	<h2>Implementation</h2>
+	<div id="code"></div>
 	<hr/>
+	
 	<h2>Note</h2>
 	<p>The exponential distribution describes the time between events in a Poisson process in which events occur continuously and independently at a constant average rate. Since its mean equals to \( \frac{1}{\lambda} \), distribution \( Exp(\lambda) \) can be used to model the waiting time between calls in a call-center having a mean waiting time of \( \frac{1}{\lambda} \) per second. </p>
 	<hr/>
