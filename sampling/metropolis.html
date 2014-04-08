@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Metropolis Algorithm</title>
+	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+	<script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
+	<script type="text/x-mathjax-config">
+	  MathJax.Hub.Config({ TeX: { extensions: ["autobold.js"] }});
+	</script>
+	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+	<link href='../css/shCore.css' rel='stylesheet' type='text/css'></link>
+	<link href='../css/shThemeDefault.css' rel='stylesheet' type='text/css'></link>
+	<script type="text/javascript" src="../js/shCore.js"></script>
+	<script type="text/javascript" src="../js/shBrushJScript.js"></script>
+	<script type="text/javascript" src="../js/util.js"></script>
+	<script type="text/javascript" src="./graph_util.js"></script>
+	<script type="text/javascript" src="./rnd.js"></script>
+	<script type="text/javascript" id="main_script">
+	// [MainScriptStarts]
+	
+	// Creates a bivariate Gaussian distribution.
+	var CreateBivariateGaussianPdf = function(mu_x, mu_y, sigma_x, sigma_y, rho) {
+		var norm_factor = 1.0 / ( 2.0 * Math.PI * sigma_x * sigma_y * Math.sqrt(1 - rho* rho) );
+		var outer_num = 1.0 / ( 2.0 * ( 1 - rho*rho) );
+		// Given x, y, return f(x, y)
+		var pdf = function(x, y) {
+			var var_x = (x - mu_x) * (x - mu_x) / (sigma_x * sigma_x);
+			var var_y = (y - mu_y) * (y - mu_y) / (sigma_y * sigma_y);
+			var corr_x_y = 2.0 * rho * (x - mu_x) * (y - mu_y) / (sigma_x * sigma_y);
+			return norm_factor * Math.exp(-outer_num * ( var_x + var_y - corr_x_y ));
+		}
+		// Given f(x, y) and x, solve for y
+		var y_solver = function(p, x) {
+			var var_x = (x - mu_x) * (x - mu_x) / (sigma_x * sigma_x);
+			var inner_sq = -Math.log( p / norm_factor ) / outer_num - (1 - rho * rho) * var_x; 
+			
+			//console.log(inner_sq);
+			var y0 = ( rho * (x - mu_x) / sigma_x  + Math.sqrt(inner_sq)) * sigma_y + mu_y;
+			var y1 = ( rho * (x - mu_x) / sigma_x  - Math.sqrt(inner_sq)) * sigma_y + mu_y;
+			return [Math.max(y0, y1), Math.min(y0, y1)];
+		}
+		return {
+			pdf: pdf,
+			y_solver: y_solver,
+			params: {
+				mu_x: mu_x,
+				mu_y: mu_y,
+				sigma_x: sigma_x,
+				sigma_y: sigma_y,
+				rho: rho,
+			}
+		}
+	}
+	
+	// Creates an isotropic Gaussian distribution that centers at the given point.
+	var CreateIsotropicBivariateGaussianSampler = function(sigma) {
+		return function(x0, x1) {
+			var g0 = $RND.gaussian_rng(x0, sigma);
+			var g1 = $RND.gaussian_rng(x1, sigma);
+			return [g0(), g1()]
+		}
+	}
+	
+	// Creates a metropolis sampler.
+	var CreateMetropolisSampler = function(initial_x, p, q_sampler) {
+		var x = initial_x;
+		var metropolis_sampler = function() {
+			while (true) {
+				var x_star = q_sampler(x[0], x[1]);
+				var accept_prob = Math.min(1, p(x_star[0], x_star[1]) / p(x[0], x[1]));
+				var u = Math.random();
+				var is_accepted = (u < accept_prob);
+				
+				if (is_accepted) {
+					x = x_star;
+				} 
+				
+				return {
+					sample: x, 
+					proposal: x_star, 
+					is_accepted: is_accepted,
+				}
+			}
+		}
+		return metropolis_sampler;
+	}
+	
+	// [MainScriptEnds]
+	
+	var GetGaussianContour = function(guassian_pdf, z) {
+		var x_start = 0.478;
+		var x_end = 2.7;
+		var step_size = 0.02;
+		var mid_point = 1.5;
+		var points = [];
+		var min_points = [];
+		for (var i = x_start; i < x_end; i+= step_size) {
+			var x_ = i;
+			//i += (0.75 * 0.75 - ( (i - 1.5) * (i - 1.5) + 1.5 )) * step_size;
+			//var x_ = 0.025*(i - 1.5) * (i - 1.5) + 1.5;
+			var ys = guassian_pdf.y_solver(z, x_);
+			points.push({
+				x: x_,
+				y: ys[0],
+			});
+			min_points.push({
+				x: x_,
+				y: ys[1],
+			});
+		}
+		for (var i = 0; i < min_points.length; ++i) {
+			points.push(min_points[i]);
+		}
+		return points;
+	}
+	
+	$(document).ready(function(){
+		// Parameters for the desired bivariate Gaussian distribution
+		var mu_x = mu_y = 1.5;
+		var sigma_x = sigma_y = 1.0;
+		var rho = 0.5;
+		var stdev = 1.0;
+		// Parameters for the Metropolis Sampler.
+		var num_samples = 300;
+		var sigma = 0.4;
+		
+		// Creates the Bivariate Gaussian distribution.
+		var gaussian_pdf = CreateBivariateGaussianPdf(mu_x, mu_y, sigma_x, sigma_y, rho);
+		var z = gaussian_pdf.pdf(stdev * sigma_x + mu_x, stdev * sigma_y + mu_y);
+		
+		// Generates the points for plotting the 1-stdev contour.
+		var points = GetGaussianContour(gaussian_pdf, z);
+		gaussian_pdf.y_solver(z, stdev * sigma_x + mu_x);		
+		
+
+		// Run the Metropolis Sampler so that each proposal sample will be added to the plot.
+		var gaussian_sampler = CreateIsotropicBivariateGaussianSampler(sigma);
+		var metropolis_sampler = CreateMetropolisSampler([5.5, -5.5], gaussian_pdf.pdf, gaussian_sampler);
+		var sample_points = [];
+		var accepted_cnt = 0;
+		for (var i = 0; i < num_samples; ++i) {
+			var s = metropolis_sampler();
+			sample_points.push({
+				x: s.proposal[0],
+				y: s.proposal[1],
+				color: (i == 0 ? 'orange' : (s.is_accepted ? 'green' : 'red')),
+				name: i,
+			});
+			accepted_cnt += (s.is_accepted ? 1 : 0);
+		}
+		
+		// Plot the chart.
+		var chart = new Highcharts.Chart({
+			chart: {
+				renderTo: 'chart',
+			},
+			title: {
+				text: 'Metropolis Sampling for Bivariate Gaussian Distribution',
+			},
+			subtitle: {
+				text: 'Number of Samples: ' + num_samples + ', Stdev of Sampler: ' + sigma + ', Acceptance Rate: ' + (accepted_cnt / num_samples),
+			},
+            plotOptions: {
+                series: {
+                    lineWidth: 1,
+                }
+            },
+			tooltip: {
+				formatter: function() {	
+					if (this.series.name === 'Samples') {
+						return 'Sample #' + this.point.name + ' (' + this.x + ', ' + this.y + ')';
+					} else {
+						return '(' + this.x + ', ' + this.y + ')';
+					}
+				}
+			},
+			series: [{
+				name: 'Bivariate Gaussian',
+				data: points,
+				type: 'scatter',
+			},{
+				name: 'Samples',
+				data: sample_points,
+				type: 'scatter',
+				marker: {
+					symbol: 'circle',
+				}
+			}],
+		});
+		
+		RenderCodeSection('main_script', 'code');
+	})
+	
+	</script>
+</head>
+<body>
+	<h1>Metropolis Algorithm</h1>
+	<p>by Weidong Liang</p>
+	<p>Beijing, 2014.04.09</p>
+	<hr/>
+	
+	<h2>Introduction</h2>
+	<p>Simliar to <a href='./rejection_sampling.html'>rejection sampling</a>, in the Metropolis algorithm, we sample from a proposal distribution; the difference is that we maintain a record of the current state \( x^{\tau} \) so that the new sample would be generated using \( q(x | x^{\tau}) \). Also, Metropolis algorithm requires that the proposal distribution is symmetric, i.e. \( q(x_A | x_B) = q(x_B | xA) \) for all values of \( x_A \) and \( x_B \). The proposal sample is then accepted with the probability:
+		$$ A(x^*, x^{(\tau)}) = min(1, \frac{\tilde{p}( x^* )}{\tilde{p}( x^{(\tau)} )} )  $$ 
+		where \( P(x) = \tilde{p}(x) / Z \) is the desired distribution. If the proposal sample is accepted, then \( x^{(\tau + 1)} = x^* \), otherwise \( x^{(\tau + 1 )} = x^{(\tau)} \) and a new sample is drawn from \( q( x | x^{\tau} )\) and the process is repeated.
+	</p>
+	<hr/>
+	
+	<h2>Simulation</h2>
+	<p>In this simulation, we will apply the Metropolis Algorithm to sample from a bivariate Gaussian with a proposal probability distribution of isotropic Gaussian, \( P(X, Y) = P(X)P(Y) \), \( P(X) \sim N(\mu, \sigma^2) \), \( P(Y) \sim N(\mu, \sigma^2) \).
+	</p>
+	<p>For multi-variate Gaussian distribution, we have pdf:
+		$$ f_x(x_1, ..., x_k) = \frac{1}{ \sqrt{ (2\pi)^k | \Sigma | } } exp({ -\frac{1}{2} (x - \mu)^T \Sigma^{-1} (x - \mu) }) $$
+		In the bivariate case, we have:
+		$$  \mu = \begin{bmatrix} \mu_x \\ \mu_y \end{bmatrix} ,
+			\Sigma = \begin{bmatrix} 
+				\sigma_x^2  & \rho \sigma_x \sigma_y \\
+				\rho \sigma_x \sigma_y  & \sigma_y^2 
+				\end{bmatrix}
+		$$
+		therefore, the pdf of the bivariate Gaussian distribution is:
+		$$	f(x, y) = \frac{1}{2 \pi \sigma_x \sigma_y \sqrt{1 - \rho^2} } 
+				exp( -\frac{1}{2 (1 - \rho^2) } 
+					[  \frac{ (x - \mu_x)^2 }{ \sigma_x^2 } 
+						+ \frac{ (y - \mu_y)^2 }{ \sigma_y^2 } 
+						- \frac{2 \rho (x - \mu_x) (y - \mu_y) }{ \sigma_x \sigma_y } 
+					] )
+		$$
+	</p>
+	<p>To sample from the bivariate Gaussian distribution, we sample from a proposal isotropic Gaussian distribution \( q(x | x^{\tau}) = N(x^{\tau}, \sigma) \).
+	</p>
+	<div id='chart'></div>
+	<hr/>
+	
+	<h2>Algorithm</h2>
+	<p>Metropolis-Algorithm(tilde_q(x), QSampler(x) )
+		<ol>
+			<li>if \( x^{(\tau)} \) not initialized</li>
+			<ol>
+				<li>\( x^{(\tau)} = argmax_x{\tilde{p}(x)} \) &nbsp;// if not possible, any x should do</li>
+			</ol>
+			<li>\( x^* \sim QSampler(x^{\tau}) \) &nbsp;// sample from \( q(x|x^{(\tau)}) \)</li>
+			<li>(\ A(x^*, x^{(\tau)}) = min(1, \frac{\tilde{p}(x^*)}{\tilde{p}(x^{(\tau)})}) \) &nbsp;//Calculate acceptance probability </li>
+			<li>\( u = U(0, 1) \) &nbsp;// generates a uniform random sample</li>
+			<li>if \( u \lt A(x^*, x^{(\tau)}) \)</li>
+			<ol>
+				<li>\( x^{(\tau)} = x^* \)</li>
+				<li>return \(x ^* \)</li>
+			</ol>
+			<li>else</li>
+			<ol>
+				<li>return Metropolis-Algorithm(tilde_q(x), QSampler(x) )</li>
+			</ol>
+		</ol>
+	</p>
+	<hr/>
+	
+	<h2>Implementation</h2>
+	<div id='code'></div>
+	<hr/>
+	
+	<h2>Note</h2>
+	<p>From the formulation of the acceptance probability \( A(x^*, x^{(\tau)} ) \), we know that if the new sample is more likely, it will always be accepted; otherwise the less likely it is compared to \( x^{\tau} \), the less likely it will be accepted; therefore the samples generated will eventually falls within the area where \( p(x) \) is large, i.e. more likely to be generated.
+	</p>
+	<p>The samples generated are highly correlated, correlation between samples maybe reduced selecting only every n-th generated sample by increasing the step sizes between each state transition.
+	</p>
+	<hr/>
+	
+	<h2>Reference</h2>
+	<ul>
+		<li><a href='http://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm'>Metropolis Hastings Algorithm</a></li>
+		<li>Bishop: Pattern Recognition and Machine Learning</li>
+	</ul>
+</body>
+</html>
+	
+		

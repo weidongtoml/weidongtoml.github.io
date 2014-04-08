@@ -10,7 +10,7 @@
 	<h2>The Monte Carlo Methods</h2>
 	<p>Monte Carlo methods are often used to obtain solutions to physical or mathematical problems that are difficult or impossible to solve using close-form solutions or applying deterministic algorithms. Through the application of peudo-random number, Monte Carlo methods are able to obtain approximate solution to high-dimensional problems in an efficient manner. There are three distinct problem classes that Monte Carlo methods are applied: optimization, numerical integration and generation of samples from a probability distribution. 
 	</p>
-	<p>In the case of stochastic optimization, the formulation of the problem itself involves random variables and/or random constraints, resulting in objective functions that exhibit randomness. In scenario optimization, samples of each random variables involved are drawn from respective distribution, these samples are then used to solve the scenario optimization program to yield the optimal parameters.
+	<p>In the case of stochastic optimization, the formulation of the problem itself involves random variables and/or random constraints, resulting in objective functions that exhibit randomness. In scenario optimization, samples of each random variables involved are drawn from respective distributions, these samples are then used to solve the scenario optimization program to yield the optimal parameters. [TODO: add stock price analysis example, for instance, in portfolio management, we want to obtain a linear combination of 3 stocks, we know the price distribution after 1 year, then we use stochastic optimization to obtain the coeffcieints.]
 	</p> 
 	<p>For the case of integrating a function over a probability distribution for the purpose of density estimation, we have to solve for  \( \mathbb{E}[f(x)] = \int_{x \sim P(X)} {f(x) \, dx} \). We can approximate the solution using Monte Carlo methods by drawing \( N \) samples \( \{ x_1, x_2, ..., x_N \} \) from the probability distribution \( P(X) \), then solve it by calculating: \( \mathbb{E}[f(x)] \approx \frac{1}{N} \, \sum_1^N{f(x_i)} \).  
 	</p>
@@ -27,11 +27,12 @@
 	<p>Sampling from continuous distributions:
 		<ol>
 			<li><a href="./inverse_transform_sampling.html">Inverse Transform Sampling</a></li>
-			<li>Sampling from the Normal Distribution</li>
+			<li><a href="./gaussian_sampler">Sampling from the Normal Distribution<a/></li>
 			<li>Sampling from the Poisson Distribution</li>
 			<li><a href='./rejection_sampling.html'>Rejection Sampling</a></li>
 			<li><a href='./importance_sampling.html'>Importance Sampling</a></li>
 			<li>The General Principle of Markov Chain Monte Carlo</li>
+			<li><a href='./metropolis.html'>Metropolis Algorithm</a></li>
 			<li>Metropolis-Hastings Algorithm</li>
 			<li>Gibbs Sampling</li>
 			<li>Particle Filters</li>
