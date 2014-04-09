@@ -2,7 +2,16 @@
 <html>
 <head>
 	<title>Pseudo-random Number Sampling Methods</title>
+	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
 	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+	<script type='text/javascript' src='../js/inlineDisqussions.js'></script>
+	<link rel="stylesheet" type="text/css" href="../css/inlineDisqussions.css" />
+	<script type='text/javascript'>
+    disqus_shortname = 'weidongtom';
+	$(document).ready(function(){
+	    $("p").inlineDisqussions();	
+	});
+	</script>
 </head>
 <body>
 	<h1>Pseudo-random Number Sampling Methods</h1>
@@ -10,7 +19,7 @@
 	<h2>The Monte Carlo Methods</h2>
 	<p>Monte Carlo methods are often used to obtain solutions to physical or mathematical problems that are difficult or impossible to solve using close-form solutions or applying deterministic algorithms. Through the application of peudo-random number, Monte Carlo methods are able to obtain approximate solution to high-dimensional problems in an efficient manner. There are three distinct problem classes that Monte Carlo methods are applied: optimization, numerical integration and generation of samples from a probability distribution. 
 	</p>
-	<p>In the case of stochastic optimization, the formulation of the problem itself involves random variables and/or random constraints, resulting in objective functions that exhibit randomness. In scenario optimization, samples of each random variables involved are drawn from respective distributions, these samples are then used to solve the scenario optimization program to yield the optimal parameters. [TODO: add stock price analysis example, for instance, in portfolio management, we want to obtain a linear combination of 3 stocks, we know the price distribution after 1 year, then we use stochastic optimization to obtain the coeffcieints.]
+	<p>In the case of stochastic optimization, the formulation of the problem itself involves random variables and/or random constraints, resulting in objective functions that exhibit randomness. In scenario optimization, samples of each random variables involved are drawn from respective distributions, these samples are then used to solve the scenario optimization program to yield the optimal parameters. In the case of portfolio management, assuming that we have estimation the probability distributions of the stocks involved a year from now, we can use stochastic optimization determine what portion of the fund shall be allocated to each stock to reach our goal (i.e. maximum return with risk below a particular threshold).
 	</p> 
 	<p>For the case of integrating a function over a probability distribution for the purpose of density estimation, we have to solve for  \( \mathbb{E}[f(x)] = \int_{x \sim P(X)} {f(x) \, dx} \). We can approximate the solution using Monte Carlo methods by drawing \( N \) samples \( \{ x_1, x_2, ..., x_N \} \) from the probability distribution \( P(X) \), then solve it by calculating: \( \mathbb{E}[f(x)] \approx \frac{1}{N} \, \sum_1^N{f(x_i)} \).  
 	</p>
