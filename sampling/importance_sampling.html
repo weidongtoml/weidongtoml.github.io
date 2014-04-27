@@ -1,254 +1,254 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Importance Sampling</title>
-	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
-	<script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
-	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-	<link href='../css/shCore.css' rel='stylesheet' type='text/css'></link>
-	<link href='../css/shThemeDefault.css' rel='stylesheet' type='text/css'></link>
-	<script type="text/javascript" src="../js/shCore.js"></script>
-	<script type="text/javascript" src="../js/shBrushJScript.js"></script>
-	<script type="text/javascript" src="../js/util.js"></script>
-	<script type="text/javascript" src="./rnd.js"></script>
-	<script type="text/javascript" src="./graph_util.js"></script>
-	<script type="text/javascript" id="main_script">
-	// [MainScriptStarts]
-	
-	// The original probability PDF p(x)
-	var P = function() {
-		var g1 = $RND.gaussian_pdf(0.8, 0.1);
-		var g2 = $RND.gaussian_pdf(0.3, 0.2);
-		return function(x) {
-			return 0.5*(g1(x) + g2(x));
-	}}();
-	
-	// The proposal Probabilty q(x) to be used.
-	var Q = function() {	
-		var q = $RND.gaussian_pdf(0.5, 0.4);
-		return function(x) {
-			return q(x);
-	}}();
+    <title>Importance Sampling</title>
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+    <script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link href='../css/shCore.css' rel='stylesheet' type='text/css'></link>
+    <link href='../css/shThemeDefault.css' rel='stylesheet' type='text/css'></link>
+    <script type="text/javascript" src="../js/shCore.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js"></script>
+    <script type="text/javascript" src="../js/util.js"></script>
+    <script type="text/javascript" src="./rnd.js"></script>
+    <script type="text/javascript" src="./graph_util.js"></script>
+    <script type="text/javascript" id="main_script">
+    // [MainScriptStarts]
+    
+    // The original probability PDF p(x)
+    var P = function() {
+        var g1 = $RND.gaussian_pdf(0.8, 0.1);
+        var g2 = $RND.gaussian_pdf(0.3, 0.2);
+        return function(x) {
+            return 0.5*(g1(x) + g2(x));
+    }}();
+    
+    // The proposal Probabilty q(x) to be used.
+    var Q = function() {    
+        var q = $RND.gaussian_pdf(0.5, 0.4);
+        return function(x) {
+            return q(x);
+    }}();
 
-	// Sampler from generating random numbers according to Q.
-	var Q_sampler = $RND.gaussian_rng(0.5, 0.3);
-	
-	var F = function(x) {
-		return Math.sin(x*5)+2.2;
-	}
-	
-	// Calculates mean of function f(x) under the probability distribution p(x) using
-	// importance sampling with the proposal distribution q(x), its sample generator 
-	// being q_sampler, and the number of samples used is num_samples.
-	var ExpectationByImportanceSampling = function(p, f, q, q_sampler, num_samples, callback) {
-		// Generate samples using q_sampler and calculate the sample weight.
-		var sample_weights = [];
-		var norm_factor = 0;  // \( \sum_m{ \tilde{p}( x^{(m)} ) / q( x^{(m)} ) } \)
-		for (var i = 0; i < num_samples; ++i) {
-			var x_i = q_sampler();
-			sample_weights[i] = {
-				x: x_i,
-				w: p(x_i) / q(x_i)
-			}
-			norm_factor += sample_weights[i].w;
-		}
+    // Sampler from generating random numbers according to Q.
+    var Q_sampler = $RND.gaussian_rng(0.5, 0.3);
+    
+    var F = function(x) {
+        return Math.sin(x*5)+2.2;
+    }
+    
+    // Calculates mean of function f(x) under the probability distribution p(x) using
+    // importance sampling with the proposal distribution q(x), its sample generator 
+    // being q_sampler, and the number of samples used is num_samples.
+    var ExpectationByImportanceSampling = function(p, f, q, q_sampler, num_samples, callback) {
+        // Generate samples using q_sampler and calculate the sample weight.
+        var sample_weights = [];
+        var norm_factor = 0;  // \( \sum_m{ \tilde{p}( x^{(m)} ) / q( x^{(m)} ) } \)
+        for (var i = 0; i < num_samples; ++i) {
+            var x_i = q_sampler();
+            sample_weights[i] = {
+                x: x_i,
+                w: p(x_i) / q(x_i)
+            }
+            norm_factor += sample_weights[i].w;
+        }
 
-		// Use the generated sample to approximate the mean of f(x) under p(x).
-		var mean_f = 0;
-		for (var i = 0; i < num_samples; ++i) {
-			mean_f += (sample_weights[i].w / norm_factor) * f(sample_weights[i].x) ;
-		}
-		
-		if (callback !== undefined) {
-			callback(sample_weights, f, norm_factor);
-		}
-		
-		return mean_f;
-	}
-	
-	// [MainScriptEnds]
-	
-	$(document).ready(function(){
-		var num_samples = 25;
-		
-		// Generates the distribution curves and the curve for function f.
-		var g_interval = 0.02;
-		var idx_array = [];
-		var dim = Math.round(1 / g_interval);
-		for (var i = 0; i < dim; i++) {
-			idx_array.push(i* g_interval);
-		}
-		var multi_modal_gaussian = convertToCoordinates(idx_array, idx_array.map(P));
-		var gaussian_approximate = convertToCoordinates(idx_array, idx_array.map(Q));
-		var f_val = convertToCoordinates(idx_array, idx_array.map(F));
-		
-		var f_p_val = convertToCoordinates(idx_array, idx_array.map(function(x){
-			return F(x) * P(x);
-		}));
-		
-		// Retrieve the samples used by importance sampling.
-		var sample_points = [];
-		var exp_f = ExpectationByImportanceSampling(P, F, Q, Q_sampler, num_samples, 
-			function(samples, f) {
-			for (var i = 0; i < samples.length; ++i) {
-				sample_points[i] = {
-					x: samples[i].x,
-					y: f(samples[i].x) * samples[i].w,
-				}
-			}
-		});
-		
-		var chart = new Highcharts.Chart({
-			chart: {
-				renderTo: 'chart',
-			},
-			title: {
-				text: 'Importance Sampling',
-			},
-			subtitle: {
-				text: 'Number of Samples Drawn: ' + num_samples + ', E[f] = ' +  exp_f
-			},
-			xAxis: {
-				title: {
-					text: 'X'
-				},
-				max: 1.0,
-				min: 0.0,
-			},
-			yAxis: [{
-				title: {
-					text: 'Frequency'
-				},
-				min: 0.0,
-			}],
-			series: [{
-				name: 'tilde_P(x)',
-				data: multi_modal_gaussian,
-				marker: {
-					enabled: false,
-				},
-				type: 'line',
-			},{
-				name: 'Q(x)',
-				data: gaussian_approximate,
-				marker: {
-					enabled: false,
-				},
-				type: 'line',
-			}, {
-				name: 'F(x)',
-				data: f_val,
-				marker: {
-					enabled: false,
-				},
-				type: 'line',
-			},{
-				name: 'F(x) * tilde_P(x)',
-				data: f_p_val,
-				marker: {
-					enabled: false,
-				},
-				type: 'line',
-			}, {
-				name: 'Selected Samples',
-				data: sample_points,
-				type: 'scatter',
-				marker: {
-					symbol: 'circle',
-				},
-			}],
-		});
-		
-		RenderCodeSection('main_script', 'code');
-	});
-	</script>
+        // Use the generated sample to approximate the mean of f(x) under p(x).
+        var mean_f = 0;
+        for (var i = 0; i < num_samples; ++i) {
+            mean_f += (sample_weights[i].w / norm_factor) * f(sample_weights[i].x) ;
+        }
+        
+        if (callback !== undefined) {
+            callback(sample_weights, f, norm_factor);
+        }
+        
+        return mean_f;
+    }
+    
+    // [MainScriptEnds]
+    
+    $(document).ready(function(){
+        var num_samples = 25;
+        
+        // Generates the distribution curves and the curve for function f.
+        var g_interval = 0.02;
+        var idx_array = [];
+        var dim = Math.round(1 / g_interval);
+        for (var i = 0; i < dim; i++) {
+            idx_array.push(i* g_interval);
+        }
+        var multi_modal_gaussian = convertToCoordinates(idx_array, idx_array.map(P));
+        var gaussian_approximate = convertToCoordinates(idx_array, idx_array.map(Q));
+        var f_val = convertToCoordinates(idx_array, idx_array.map(F));
+        
+        var f_p_val = convertToCoordinates(idx_array, idx_array.map(function(x){
+            return F(x) * P(x);
+        }));
+        
+        // Retrieve the samples used by importance sampling.
+        var sample_points = [];
+        var exp_f = ExpectationByImportanceSampling(P, F, Q, Q_sampler, num_samples, 
+            function(samples, f) {
+            for (var i = 0; i < samples.length; ++i) {
+                sample_points[i] = {
+                    x: samples[i].x,
+                    y: f(samples[i].x) * samples[i].w,
+                }
+            }
+        });
+        
+        var chart = new Highcharts.Chart({
+            chart: {
+                renderTo: 'chart',
+            },
+            title: {
+                text: 'Importance Sampling',
+            },
+            subtitle: {
+                text: 'Number of Samples Drawn: ' + num_samples + ', E[f] = ' +  exp_f
+            },
+            xAxis: {
+                title: {
+                    text: 'X'
+                },
+                max: 1.0,
+                min: 0.0,
+            },
+            yAxis: [{
+                title: {
+                    text: 'Frequency'
+                },
+                min: 0.0,
+            }],
+            series: [{
+                name: 'tilde_P(x)',
+                data: multi_modal_gaussian,
+                marker: {
+                    enabled: false,
+                },
+                type: 'line',
+            },{
+                name: 'Q(x)',
+                data: gaussian_approximate,
+                marker: {
+                    enabled: false,
+                },
+                type: 'line',
+            }, {
+                name: 'F(x)',
+                data: f_val,
+                marker: {
+                    enabled: false,
+                },
+                type: 'line',
+            },{
+                name: 'F(x) * tilde_P(x)',
+                data: f_p_val,
+                marker: {
+                    enabled: false,
+                },
+                type: 'line',
+            }, {
+                name: 'Selected Samples',
+                data: sample_points,
+                type: 'scatter',
+                marker: {
+                    symbol: 'circle',
+                },
+            }],
+        });
+        
+        RenderCodeSection('main_script', 'code');
+    });
+    </script>
 </head>
 <body>
-	<h1>Importance Sampling</h1>
-	<p>by Weidong Liang</p>
-	<p>Beijing, 2014.04.05</p>
-	<hr/>
-	
-	<h2>Introduction</h2>
-	<p>As mentioned in the chapter <a href='./index.html'>introduction</a>, one possible usage of pseudo-random number sampling is to obtain a numerical approximation to the integral \( \mathbb{E}[f(x)] = \int_{x \sim P(X)} {f(x) \, dx} \approx \frac{1}{N} \, \sum_1^N{f(x_i)} \), importance sampling provides a framework for evaluating the expectation; but itself is not able to draw samples from the distribution \( P(X) \).
-	</p>
-	<p>Importance sampling assume that we are able to evaluate the given probability density function up to a normalization constant, i.e., let \( p(x) \) be the probability density function of the concerned distribution, and let \( p(x) = \frac{\tilde{p}(x)}{Z_p} \), importance sampling required that we can readily evaluate \( \tilde{p}(x) \), ability to evaluate the normalization constant \( Z_p \) is not required.
-	</p>
-	<p>Assuming that we have a proposal distribution \( q(x) \) from which we can easily draw samples \( x^{(l)} \) from, the simple form of importance sampling is:
-		$$ \mathbb{E}[f] = \int{f(x) p(x) dx}
-			= \int{f(x) \frac{p(x)}{q(x)} q(x) dx}
-			\approx \frac{1}{L} \sum_{l=1}^{L}{ \frac{p(x^{x(l)})}{q(x^{(l)})} f(x^{(l)}) }
-		$$
-	</p>
-	<p>
-		For distribution that can only evaluated up to a normalization constant, let \( q(x) = \frac{\tilde{q}(x)}{Z_q} \), we have:
-		$$ \mathbb{E}[f] = \int{f(x) p(x) dx}
-			 = \int{f(x) \frac{p(x)}{q(x)} q(x) dx}
-			 = \frac{Z_p}{Z_q} \int{ f(x) \frac{ \tilde{p}(x) }{ \tilde{q}(x) } dx }
-			 \approx \frac{Z_p}{Z_q} \frac{1}{L} \sum_{l=1}^{L}{ \tilde{r_l} f( x^{(l)} ) } 
-		$$
-		where \( \tilde{r_l} = \frac{ \tilde{p}( x^{(l)} ) }{ \tilde{q}( x^{(l)} ) }  \). Similarly, the ratio of \( \frac{Z_p}{Z_q} \) can also be approximated using:
-		$$ \frac{Z_p}{Z_q} = \frac{1}{Z_q} \int{ \tilde{p}(x) dx } 
-			= \int{ \frac{ \tilde{p}(x)  }{ \tilde{q}(x)  } q(x) dx }
-			\approx \frac{1}{L} \sum_{l=1}^{L}{ \tilde{r_l} }
-		$$
-		Combining the above we have:
-		$$ \mathbb{E}[f] \approx \sum_{l=1}^{L}{ w_l f(x^{(l)}) } $$
-		where
-		$$ w_l = \frac{ \tilde{r_l} }{ \sum_m{ \tilde{r_m} } } 
-			= \frac{ \tilde{p}( x^{(l)} ) / q( x^{(l)} ) }{ \sum_m{ \tilde{p}( x^{(m)} ) / q( x^{(m)} ) }  }
-		$$
-	</p>
-	<p>Similar to <a href='./rejection_sampling'>rejection sampling</a>, the efficiency of the importance sampling depends greatly on how welll the sampling distribution \( q(x) \) matches \( p(x) \).
-	</p>
-	<hr/>
-	
-	<h2>Simulation</h2>
-	<p>In the following simulation, we construct a toy problem using the bimodal normal distribution \( P(x) = \frac{1}{2}[N(0.8, 0.1^2) + N(0.3, 0.2^2)] \) as the distribution under which, the objective function \( F(x) = sin(5 x)+2.2 \) is evaluated to find the mean. The proposal distribution is a unimodal normal distribution \( Q(x) = N(0.5, 0.4^2) \) whose samples can be easily <a href='./gaussian_sampler.html'>generated</a>.
-	</p>
-	<div id='chart'></div>
-	<hr/>
-	
-	<h2>Algorithm</h2>
-	<p>ExpectationByImportanceSampling(tilde_P, F, Q, QSampler, num_samples) &nbsp;// Evaluate \( \mathbb{E}_{P(X)}[F]  \) using Importance Sampling
-	</p>
-	<ol>
-		<li>norm_factor = 0 &nbsp;//Normalization factor for \( w_l \), which is \( \sum_m{ \tilde{p}(x^{(m)}) / q(x^{(m)}) } \)</li>
-		<li>mean_f = 0</li>
-		<li>for i = 0; i &lt; num_samples; ++i
-			<ol>
-				<li>x_i = QSampler() &nbsp;//Draw sample x_i from Q(x)</li>
-				<li>r_i = tilde_P(x_i) / Q(x_i)
-				<li>mean_f += r_i * F(x_i)</li>
-				<li>norm_factor += r_i</li>
-			</ol>
-		</li>
-		<li> return mean_f / norm_factor</li>
-	</ol>
-	<hr/>
-	
-	<h2>Implementation</h2>
-	<div id='code'></div>
-	<hr/>
-	
-	<h2>Note</h2>
-	<p>Since it is often the case that \( p(x)f(x) \) has big variation across the domain and that a significant portion of the mass is concentrated only in relatively small regions; therefore in the set of importance weights \( \{ r_l \} \), it could be dorminated only by a few weights with large values. If the proposal distribution \( Q(x) \) is so far off such that the importance weights produced are small at regions where \( p(x)f(x) \) is large, then the resuling mean might not be a very good approximation to the actual mean.
-	</p>
-	<hr/>
-	
-	<h2>Reference</h2>
-	<ul>
-		<li>Bishop: Pattern Recognition and Machine Learning</li>
-	</ul>
-	<hr/>
-	
-	<div id="disqus_thread"></div>
+    <h1>Importance Sampling</h1>
+    <p>by Weidong Liang</p>
+    <p>Beijing, 2014.04.05</p>
+    <hr/>
+    
+    <h2>Introduction</h2>
+    <p>As mentioned in the chapter <a href='./index.html'>introduction</a>, one possible usage of pseudo-random number sampling is to obtain a numerical approximation to the integral \( \mathbb{E}[f(x)] = \int_{x \sim P(X)} {f(x) \, dx} \approx \frac{1}{N} \, \sum_1^N{f(x_i)} \), importance sampling provides a framework for evaluating the expectation; but itself is not able to draw samples from the distribution \( P(X) \).
+    </p>
+    <p>Importance sampling assume that we are able to evaluate the given probability density function up to a normalization constant, i.e., let \( p(x) \) be the probability density function of the concerned distribution, and let \( p(x) = \frac{\tilde{p}(x)}{Z_p} \), importance sampling required that we can readily evaluate \( \tilde{p}(x) \), ability to evaluate the normalization constant \( Z_p \) is not required.
+    </p>
+    <p>Assuming that we have a proposal distribution \( q(x) \) from which we can easily draw samples \( x^{(l)} \) from, the simple form of importance sampling is:
+        $$ \mathbb{E}[f] = \int{f(x) p(x) dx}
+            = \int{f(x) \frac{p(x)}{q(x)} q(x) dx}
+            \approx \frac{1}{L} \sum_{l=1}^{L}{ \frac{p(x^{x(l)})}{q(x^{(l)})} f(x^{(l)}) }
+        $$
+    </p>
+    <p>
+        For distribution that can only evaluated up to a normalization constant, let \( q(x) = \frac{\tilde{q}(x)}{Z_q} \), we have:
+        $$ \mathbb{E}[f] = \int{f(x) p(x) dx}
+             = \int{f(x) \frac{p(x)}{q(x)} q(x) dx}
+             = \frac{Z_p}{Z_q} \int{ f(x) \frac{ \tilde{p}(x) }{ \tilde{q}(x) } dx }
+             \approx \frac{Z_p}{Z_q} \frac{1}{L} \sum_{l=1}^{L}{ \tilde{r_l} f( x^{(l)} ) } 
+        $$
+        where \( \tilde{r_l} = \frac{ \tilde{p}( x^{(l)} ) }{ \tilde{q}( x^{(l)} ) }  \). Similarly, the ratio of \( \frac{Z_p}{Z_q} \) can also be approximated using:
+        $$ \frac{Z_p}{Z_q} = \frac{1}{Z_q} \int{ \tilde{p}(x) dx } 
+            = \int{ \frac{ \tilde{p}(x)  }{ \tilde{q}(x)  } q(x) dx }
+            \approx \frac{1}{L} \sum_{l=1}^{L}{ \tilde{r_l} }
+        $$
+        Combining the above we have:
+        $$ \mathbb{E}[f] \approx \sum_{l=1}^{L}{ w_l f(x^{(l)}) } $$
+        where
+        $$ w_l = \frac{ \tilde{r_l} }{ \sum_m{ \tilde{r_m} } } 
+            = \frac{ \tilde{p}( x^{(l)} ) / q( x^{(l)} ) }{ \sum_m{ \tilde{p}( x^{(m)} ) / q( x^{(m)} ) }  }
+        $$
+    </p>
+    <p>Similar to <a href='./rejection_sampling'>rejection sampling</a>, the efficiency of the importance sampling depends greatly on how welll the sampling distribution \( q(x) \) matches \( p(x) \).
+    </p>
+    <hr/>
+    
+    <h2>Simulation</h2>
+    <p>In the following simulation, we construct a toy problem using the bimodal normal distribution \( P(x) = \frac{1}{2}[N(0.8, 0.1^2) + N(0.3, 0.2^2)] \) as the distribution under which, the objective function \( F(x) = sin(5 x)+2.2 \) is evaluated to find the mean. The proposal distribution is a unimodal normal distribution \( Q(x) = N(0.5, 0.4^2) \) whose samples can be easily <a href='./gaussian_sampler.html'>generated</a>.
+    </p>
+    <div id='chart'></div>
+    <hr/>
+    
+    <h2>Algorithm</h2>
+    <p>ExpectationByImportanceSampling(tilde_P, F, Q, QSampler, num_samples) &nbsp;// Evaluate \( \mathbb{E}_{P(X)}[F]  \) using Importance Sampling
+    </p>
+    <ol>
+        <li>norm_factor = 0 &nbsp;//Normalization factor for \( w_l \), which is \( \sum_m{ \tilde{p}(x^{(m)}) / q(x^{(m)}) } \)</li>
+        <li>mean_f = 0</li>
+        <li>for i = 0; i &lt; num_samples; ++i
+            <ol>
+                <li>x_i = QSampler() &nbsp;//Draw sample x_i from Q(x)</li>
+                <li>r_i = tilde_P(x_i) / Q(x_i)
+                <li>mean_f += r_i * F(x_i)</li>
+                <li>norm_factor += r_i</li>
+            </ol>
+        </li>
+        <li> return mean_f / norm_factor</li>
+    </ol>
+    <hr/>
+    
+    <h2>Implementation</h2>
+    <div id='code'></div>
+    <hr/>
+    
+    <h2>Note</h2>
+    <p>Since it is often the case that \( p(x)f(x) \) has big variation across the domain and that a significant portion of the mass is concentrated only in relatively small regions; therefore in the set of importance weights \( \{ r_l \} \), it could be dorminated only by a few weights with large values. If the proposal distribution \( Q(x) \) is so far off such that the importance weights produced are small at regions where \( p(x)f(x) \) is large, then the resuling mean might not be a very good approximation to the actual mean.
+    </p>
+    <hr/>
+    
+    <h2>Reference</h2>
+    <ul>
+        <li>Bishop: Pattern Recognition and Machine Learning</li>
+    </ul>
+    <hr/>
+    
+    <div id="disqus_thread"></div>
     <script type="text/javascript">
         /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
         var disqus_shortname = 'weidongtomlgithubio'; // required: replace example with your forum shortname
-		// var disqus_url = 'http://weidongtoml.github.io/sampling/index.html';
-		// var disqus_developer = 1;
-		var disqus_identifier = 'Pseudo-random Number Sampling Methods - Importance Sampling';
+        // var disqus_url = 'http://weidongtoml.github.io/sampling/index.html';
+        // var disqus_developer = 1;
+        var disqus_identifier = 'Pseudo-random Number Sampling Methods - Importance Sampling';
         /* * * DON'T EDIT BELOW THIS LINE * * */
         (function() {
             var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;

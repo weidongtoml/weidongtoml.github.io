@@ -1,57 +1,218 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Sampling from the Normal Distribution</title>
-	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
-	<script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
-	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-	<link href='../css/shCore.css' rel='stylesheet' type='text/css'></link>
-	<link href='../css/shThemeDefault.css' rel='stylesheet' type='text/css'></link>
-	<script type="text/javascript" src="../js/shCore.js"></script>
-	<script type="text/javascript" src="../js/shBrushJScript.js"></script>
-	<script type="text/javascript" src="../js/util.js"></script>
-	<script type="text/javascript" src="./graph_util.js"></script>
-	<script type="text/javascript" id="main_script">
-	// [MainScriptStarts]
-	// [MainScriptEnds]
-	</script>
+    <title>Sampling from the Normal Distribution</title>
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+    <script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link href='../css/shCore.css' rel='stylesheet' type='text/css'></link>
+    <link href='../css/shThemeDefault.css' rel='stylesheet' type='text/css'></link>
+    <script type="text/javascript" src="../js/shCore.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js"></script>
+    <script type="text/javascript" src="../js/util.js"></script>
+    <script type="text/javascript" src="./graph_util.js"></script>
+    <script type="text/javascript" id="main_script">
+    // [MainScriptStarts]
+    
+    // CreateGaussianSampler creates a sampler that generates samples from a Gaussian distribution with
+    // the given mean and standard deviation.
+    var CreateGaussianSampler = function(mean, stdev) {
+        var sampler = function() {
+            var u_1 = Math.random();
+            var u_2 = Math.random();
+            var z_1 = Math.sqrt(-2 * Math.log(u_1)) * Math.cos(2 * Math.PI * u_2);
+            return z_1 * stdev + mean;
+        }
+        return sampler;
+    }
+    
+    // [MainScriptEnds]
+    
+    // CreateGaussianDist returns a Gaussian distribution object.
+    var CreateGaussianDist = function(mean, stdev) {
+        var norm_factor = 1.0 / (stdev * Math.sqrt(2 * Math.PI));
+        var pdf = function(x) {
+            return norm_factor * Math.exp(- (x - mean) * (x - mean) / (2 * stdev * stdev));
+        }
+        return {
+            pdf: pdf,
+        }
+    }
+    
+    var PlotChart = function(num_buckets, num_samples, lambda) {
+        var mean = num_buckets / 2;
+        var stdev = num_buckets / 8;
+        // Creates the distribution object
+        var normal_dist = CreateGaussianDist(mean, stdev);
+        
+        // Generate the theoretical distritbution using the pdf
+        var theoretical_dist = [];
+        for (var i = 0; i < num_buckets; ++i) {
+            theoretical_dist[i] = {
+                x: i,
+                y: normal_dist.pdf(i),
+            };
+        }
+        
+        // Generate the sampled distribution
+        var gaussian_sampler = CreateGaussianSampler(mean, stdev);
+        var histogram = CreateHistogramFromSampler(gaussian_sampler, num_samples, num_buckets);
+        var sampled_dist = [];
+        for (var i = 0; i < num_buckets; ++i) {
+            sampled_dist[i] = {
+                x: i,
+                y: histogram[i],
+            }
+        }
+        
+        var chart = new Highcharts.Chart({
+            chart: {
+                renderTo: 'chart',
+            },
+            colors: kHighChart2Colors,
+            title: {
+                text: 'Theoretical Normal Distribution VS Distribution via Box-Muller Transform Sampling',
+            },
+            subtitle: {
+                text: 'mean = ' + mean + ', stdev = ' + stdev + ', num_samples = ' + num_samples
+            },
+            xAxis: {
+                title: {
+                    text: 'x'
+                },
+                allowDecimals: false,
+            },
+            yAxis: {
+                title: {
+                    text: 'P(x)',
+                },
+            },
+            series: [{
+                name: 'Theoretical Normal Distribution',
+                data: theoretical_dist,
+                type: 'line',
+            }, {
+                name: 'Sampled Normal Distribution',
+                data: sampled_dist,
+                type: 'column',
+            }]
+        });
+    }
+    
+    // Plot Exponential pdf along with sampled Possion pdf.
+    $(document).ready(function(){
+        var redraw_action_handler = function() {
+            // Simulation parameters
+            var num_buckets = parseInt($('#num_buckets_val').val());    // Number of buckets in the histogram.
+            var num_samples = parseInt($('#num_samples_val').val());    // Number of samples to be drawn.
+            var lambda = parseFloat($('#lambda_val').val());    // Exponential Distribution parameter lambda.
+        
+            PlotChart(num_buckets, num_samples, lambda);
+        }
+        
+        $('#redraw_button').click(function(){redraw_action_handler()});
+        redraw_action_handler();
+        
+        RenderCodeSection('main_script', 'code');
+    });
+    </script>
+    
+    </script>
 </head>
 <body>
-	<h1>Sampling from the Normal Distribution</h1>
-	<p>by Weidong Liang</p>
-	<p>Beijing, 2014.</p>
-	<hr/>
-	
-	<h2>Introduction</h2>
-	<p>
-	</p>
-	<hr/>
-	
-	<h2>Simulation</h2>
-	<p>
-	</p>
-	<hr/>
-	
-	<h2>Algorithm</h2>
-	<p>
-	</p>
-	<hr/>
-	
-	<h2>Implementation</h2>
-	<div id='code'></div>
-	<hr/>
-	
-	<h2>Note</h2>
-	<p>
-	</p>
-	<hr/>
-	
-	<h2>Reference</h2>
-	<ul>
-		<li><a href='http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform'>Box-Muller Transform</a></li>
-		<li><a href='http://mathworld.wolfram.com/Box-MullerTransformation.html'>Weisstein, Eric W. "Box-Muller Transformation." From MathWorld--A Wolfram Web Resource.</a></li>
-	</ul>
+    <h1>Sampling from the Normal Distribution</h1>
+    <p>by Weidong Liang</p>
+    <p>Beijing, 2014.4</p>
+    <hr/>
+    
+    <h2>Introduction</h2>
+
+    <p>The Box-Muller Transform transforms a two-dimentional constinuous uniform distribution to a two dimensional bivariate normal distribution using:
+        $$ Z_1 = \sqrt{-2 ln U_1} cos(2 \pi U_2) $$
+        $$ Z_2 = \sqrt{-2 ln U_1} sin(2 \pi U_1) $$
+        where \( Z_1, Z_2 \sim N(0, 1) \) and \( U_1, U_2 \sim U(0, 1) \).
+    </p>
+    <p>This can be verified by using the above equation, solve for \( X_1, X_2 \) to obtain:
+        $$ U_1 = e ^ {- \frac{(Z_1 ^ 2 + Z_2 ^ 2)}{2} } $$
+        $$ U_2 = \frac{1}{(2 \pi)} tan^{-1}(\frac{Z_2}{Z_1}) $$
+        taking the Jacobian to obtain:
+        $$ \frac{ \partial (U_1, U_2) }{ \partial (Z_1, Z_2) } 
+            = { \begin{bmatrix}
+                 \ \frac{ \partial(U_1) }{ \partial(Z_1) }  &   \frac{ \partial(U_1) }{ \partial(Z_2) } \\
+                 \ \frac{ \partial(U_2) }{ \partial(Z_1) }  &   \frac{ \partial(U_2) }{ \partial{Z_2} }
+              \end{bmatrix} } 
+            = -( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_1 ^ 2 }{ 2 }} )( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_2 ^ 2 }{ 2 }} )
+        $$
+        Using the change of variable rules of density function, we have
+        $$
+            P_{(Z_1, Z_2)}(z_1, z_2) = P_{(U_1, U_2)}(u_1, u_2) \left| \frac{ \partial (U_1, U_2) }{ \partial (Z_1, Z_2) } \right|
+                =  P_{(U_1, U_2)}(u_1, u_2) ( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_1 ^ 2 }{ 2 }} )( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_2 ^ 2 }{ 2 }} )
+        $$
+    </p>
+    <hr/>
+    
+    <h2>Simulation</h2>
+    <p>For the following simulation, we use Box-Muller Transform to generate samples from the Normal distribution, and then compare the histogram of these
+        samples against the theoretical probability density function (pdf).
+    </p>
+    <div id="chart"></div>
+    <p> Parameters: </p>
+    <p>
+        NumberOfBuckets: <input type='text' value='50' id='num_buckets_val' /> 
+        NumberOfSamples: <input type='text' value='100000' id='num_samples_val' />
+        Lambda: <input type='text' value='0.1' id='lambda_val' />
+        <input type='button' value='redraw' id='redraw_button' />
+    </p>
+    <hr/>
+    
+    <h2>Algorithm</h2>
+    <p>GaussianSamplerWithBoxMullerTransform() &nbsp; // Draw a sample from a standard Normal distribution.
+        <ol> 
+            <li>u_1 <- U(0, 1)  &nbsp; // generate u_1 from a uniform random distribution [0, 1] </li>
+            <li>u_2 <- U(0, 1)  &nbsp; // generate u_2 from a uniform random distribution [0, 1] </li>
+            <li>z_1 = \( \sqrt{-2 ln u_1} cos(2 \pi u_2) \)   &nbsp; // Apply Box-Muller transform</li>
+            <li>return z_1</li>
+        </ol>
+    </p>
+    <hr/>
+    
+    <h2>Implementation</h2>
+    <div id='code'></div>
+    <hr/>
+    
+    <h2>Note</h2>
+    <h3>The Change of Variable Technique</h3>
+    <p>Consider a change  of variables \(x  = g(y) \), then a function \( f(x) \) becomes \( \tilde{f}(x) = f(g(x)) \). 
+        Let \( p_x{x} \) corresponds to a density \( p_y(y) \) with respect to the new variable \( y \), where the suffices denote that they are different densities. Observations falling in the range \( (x, x + \delta x ) \) will, for small values of \( \delta x \), be transformed into the range of \( (y, y + \delta y ) \) where \( p_x(x) \delta x \approx p_y(y) \delta y \) and hence:
+        $$ p_y(y) = p_x(x) \left|{ \frac{dx}{dy} }\right| $$ 
+    </p>
+    <p>
+    </p>
+    <hr/>
+    
+    <h2>Reference</h2>
+    <ul>
+        <li><a href='http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform'>Box-Muller Transform</a></li>
+        <li><a href='http://mathworld.wolfram.com/Box-MullerTransformation.html'>Weisstein, Eric W. "Box-Muller Transformation." From MathWorld--A Wolfram Web Resource.</a></li>
+        <li><a href='https://onlinecourses.science.psu.edu/stat414/node/157'>Change-of-Variable Technique</a> 
+    </ul>   
+    <hr/>
+    
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'weidongtomlgithubio'; // required: replace example with your forum shortname
+        var disqus_identifier = 'Pseudo-random Number Sampling Methods - Inverse Transform Sampling';
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
 </body>
 </html>
-	
-		
+    
+        

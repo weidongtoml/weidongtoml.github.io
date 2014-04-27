@@ -1,64 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Pseudo-random Number Sampling Methods</title>
-	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
-	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <title>Pseudo-random Number Sampling Methods</title>
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 </head>
 <body>
-	<h1>Pseudo-random Number Sampling Methods</h1>
-	<hr/>
-	
-	<h2>The Monte Carlo Methods</h2>
-	<p>Monte Carlo methods are often used to obtain solutions to physical or mathematical problems that are difficult or impossible to solve using close-form solutions or applying deterministic algorithms. Through the application of peudo-random number, Monte Carlo methods are able to obtain approximate solution to high-dimensional problems in an efficient manner. There are three distinct problem classes that Monte Carlo methods are applied: optimization, numerical integration and generation of samples from a probability distribution. 
-	</p>
-	<p>In the case of stochastic optimization, the formulation of the problem itself involves random variables and/or random constraints, resulting in objective functions that exhibit randomness. In scenario optimization, samples of each random variables involved are drawn from respective distributions, these samples are then used to solve the scenario optimization program to yield the optimal parameters. In the case of portfolio management, assuming that we have estimation the probability distributions of the stocks involved a year from now, we can use stochastic optimization determine what portion of the fund shall be allocated to each stock to reach our goal (i.e. maximum return with risk below a particular threshold).
-	</p> 
-	<p>For the case of integrating a function over a probability distribution for the purpose of density estimation, we have to solve for  \( \mathbb{E}[f(x)] = \int_{x \sim P(X)} {f(x) \, dx} \). We can approximate the solution using Monte Carlo methods by drawing \( N \) samples \( \{ x_1, x_2, ..., x_N \} \) from the probability distribution \( P(X) \), then solve it by calculating: \( \mathbb{E}[f(x)] \approx \frac{1}{N} \, \sum_1^N{f(x_i)} \).  
-	</p>
-	<p>There are times when we encounter complex, high-dimensional mutli-variate distributions and would like to draw samples from such distributions, Monte Carlo methods such as the Metropolis-Hastings, Gibbs Sampling algorithms can be used to efficiently complete the task.
-	</p>
-	<p>All of the above cases required drawing samples from different probability distributions. Most of the programming languages we use comes with only a basic random number generator which can be used to draw samples from a uniform distribution; to generate samples from non-uniform distribution, we can use various pseudo-random number sampling methods; and these methods are main topics of this chapter.
-	</p>
-	<h2>Topics Covered</h2>
-	<p>Sampling from finite discrete distributions:
-		<ol>
-			<li><a href='./discrete_distribution_sampling.html'>Finite Discrete Distribution Sampling</a></li>
-		</ol>
-	</p>
-	<p>Sampling from continuous distributions:
-		<ol>
-			<li><a href="./inverse_transform_sampling.html">Inverse Transform Sampling</a></li>
-			<li><a href="./gaussian_sampler">Sampling from the Normal Distribution<a/></li>
-			<li>Sampling from the Poisson Distribution</li>
-			<li><a href='./rejection_sampling.html'>Rejection Sampling</a></li>
-			<li><a href='./importance_sampling.html'>Importance Sampling</a></li>
-			<li>The General Principle of Markov Chain Monte Carlo</li>
-			<li><a href='./metropolis.html'>Metropolis Algorithm</a></li>
-			<li>Metropolis-Hastings Algorithm</li>
-			<li>Gibbs Sampling</li>
-			<li>Particle Filters</li>
-		</ol>
-	</p>
-	
-	<hr/>
-	<h2>Reference</h2>
-	<p>
-		<ul>
-			<li><a href='http://en.wikipedia.org/wiki/Monte_Carlo_method'>Monte Carlo Method</a></li>
-			<li><a href='http://en.wikipedia.org/wiki/Pseudo-random_number_sampling'>Pseudorandom Number Sampling</a></li>
-			<li><a href='http://en.wikipedia.org/wiki/Stochastic_optimization'>Stochastic Optimization</a></li>
-		</ul>
-	</p>
-	<hr/>
-	
-	<div id="disqus_thread"></div>
+    <h1>Pseudo-random Number Sampling Methods</h1>
+    <hr/>
+    
+    <h2>The Monte Carlo Methods</h2>
+    <p>Monte Carlo methods are often used to obtain solutions to physical or mathematical problems that are difficult or impossible to solve using close-form solutions or applying deterministic algorithms. Through the application of peudo-random number, Monte Carlo methods are able to obtain approximate solution to high-dimensional problems in an efficient manner. There are three distinct problem classes that Monte Carlo methods are applied: optimization, numerical integration and generation of samples from a probability distribution. 
+    </p>
+    <p>In the case of stochastic optimization, the formulation of the problem itself involves random variables and/or random constraints, resulting in objective functions that exhibit randomness. In scenario optimization, samples of each random variables involved are drawn from respective distributions, these samples are then used to solve the scenario optimization program to yield the optimal parameters. In the case of portfolio management, assuming that we have estimation the probability distributions of the stocks involved a year from now, we can use stochastic optimization determine what portion of the fund shall be allocated to each stock to reach our goal (i.e. maximum return with risk below a particular threshold).
+    </p> 
+    <p>For the case of integrating a function over a probability distribution for the purpose of density estimation, we have to solve for  \( \mathbb{E}[f(x)] = \int_{x \sim P(X)} {f(x) \, dx} \). We can approximate the solution using Monte Carlo methods by drawing \( N \) samples \( \{ x_1, x_2, ..., x_N \} \) from the probability distribution \( P(X) \), then solve it by calculating: \( \mathbb{E}[f(x)] \approx \frac{1}{N} \, \sum_1^N{f(x_i)} \).  
+    </p>
+    <p>There are times when we encounter complex, high-dimensional mutli-variate distributions and would like to draw samples from such distributions, Monte Carlo methods such as the Metropolis-Hastings, Gibbs Sampling algorithms can be used to efficiently complete the task.
+    </p>
+    <p>All of the above cases required drawing samples from different probability distributions. Most of the programming languages we use comes with only a basic random number generator which can be used to draw samples from a uniform distribution; to generate samples from non-uniform distribution, we can use various pseudo-random number sampling methods; and these methods are main topics of this chapter.
+    </p>
+    <h2>Topics Covered</h2>
+    <p>Sampling from finite discrete distributions:
+        <ol>
+            <li><a href='./discrete_distribution_sampling.html'>Finite Discrete Distribution Sampling</a></li>
+        </ol>
+    </p>
+    <p>Sampling from continuous distributions:
+        <ol>
+            <li><a href="./inverse_transform_sampling.html">Inverse Transform Sampling</a></li>
+            <li><a href="./gaussian_sampler.html">Sampling from the Normal Distribution<a/></li>
+            <li>Sampling from the Poisson Distribution</li>
+            <li><a href='./rejection_sampling.html'>Rejection Sampling</a></li>
+            <li><a href='./importance_sampling.html'>Importance Sampling</a></li>
+            <li>The General Principle of Markov Chain Monte Carlo</li>
+            <li><a href='./metropolis.html'>Metropolis Algorithm</a></li>
+            <li>Metropolis-Hastings Algorithm</li>
+            <li>Gibbs Sampling</li>
+            <li>Particle Filters</li>
+        </ol>
+    </p>
+    
+    <hr/>
+    <h2>Reference</h2>
+    <p>
+        <ul>
+            <li><a href='http://en.wikipedia.org/wiki/Monte_Carlo_method'>Monte Carlo Method</a></li>
+            <li><a href='http://en.wikipedia.org/wiki/Pseudo-random_number_sampling'>Pseudorandom Number Sampling</a></li>
+            <li><a href='http://en.wikipedia.org/wiki/Stochastic_optimization'>Stochastic Optimization</a></li>
+        </ul>
+    </p>
+    <hr/>
+    
+    <div id="disqus_thread"></div>
     <script type="text/javascript">
         /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
         var disqus_shortname = 'weidongtomlgithubio'; // required: replace example with your forum shortname
-		//var disqus_url = 'http://weidongtoml.github.io/sampling/index.html';
-		// var disqus_developer = 1;
-		var disqus_identifier = 'Pseudo-random Number Sampling Methods - Introduction';
+        //var disqus_url = 'http://weidongtoml.github.io/sampling/index.html';
+        // var disqus_developer = 1;
+        var disqus_identifier = 'Pseudo-random Number Sampling Methods - Introduction';
         /* * * DON'T EDIT BELOW THIS LINE * * */
         (function() {
             var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
