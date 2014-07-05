@@ -241,7 +241,7 @@
                 <li>\( x^{(\tau)} = argmax_x{\tilde{p}(x)} \) &nbsp;// if not possible, any x should do</li>
             </ol>
             <li>\( x^* \sim QSampler(x^{\tau}) \) &nbsp;// sample from \( q(x|x^{(\tau)}) \)</li>
-            <li>(\ A(x^*, x^{(\tau)}) = min(1, \frac{\tilde{p}(x^*)}{\tilde{p}(x^{(\tau)})}) \) &nbsp;//Calculate acceptance probability </li>
+            <li>\( A(x^*, x^{(\tau)}) = min(1, \frac{\tilde{p}(x^*)}{\tilde{p}(x^{(\tau)})}) \) &nbsp;//Calculate acceptance probability </li>
             <li>\( u = U(0, 1) \) &nbsp;// generates a uniform random sample</li>
             <li>if \( u \lt A(x^*, x^{(\tau)}) \)</li>
             <ol>

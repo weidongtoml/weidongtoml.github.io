@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <script type="text/javascript" src="../js/jquery.min.js"></script>
+    <script type="text/javascript" src="../js/highcharts.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link href='../css/shCore.css' rel='stylesheet' type='text/css'></link>
+    <link href='../css/shThemeDefault.css' rel='stylesheet' type='text/css'></link>
+    <script type="text/javascript" src="../js/shCore.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js"></script>
+    <script type="text/javascript" src="../js/util.js"></script>
+    <script type="text/javascript" id="main_script">
+    // [MainScriptStarts]
+    // [MainScriptEnds]
+    </script>
+</head>
+<body>
+    <h1>Factorization Machines</h1>
+    <p>by Weidong Liang</p>
+    <p>Beijing, 2014.06</p>
+    <hr/>
+    
+    <h2>Introduction</h2>
+    <p>The Factorization Machine model has the following form:
+    $$
+    \hat y (x) = \omega_0 + \sum_{i=1}^{n}{\omega_i x_i} + 
+       \sum_{i=1}^{n} \sum_{j=i+1}^{n}{ \lt v_i , v_j \gt x_i x_j }
+    $$
+    where
+    \( \omega_0 \in \mathbb{R} \), \( w \in \mathbb{R}^p \) and \( V \in \mathbb{R}^{p \times k} \).
+    Direct evaluation of y using the above requires a time complexity of \( O(k n ^ 2) \).
+    </p>
+    <p>The model can be efficiently computed using
+    $$
+    \hat y (x) = \omega_0 + \sum_{i=1}^{n}{\omega_i x_i} +
+        \frac{1}{2} \sum_{f=1}^{k}( 
+            (\sum_{i=1}^{n}{v_{i, f} x_i } )^2 - \sum_{i=1}^{n}{ v_{i, f}^2 x_i^2 } )
+    $$
+    which requires only \( O(k n) \).
+    </p>
+    <hr/>
+    
+    <h2>Learning FM</h2>
+    <p>Two common loss functions and their gradients are:
+    <ul>
+        <li>Square Loss for regression:
+        \( L^{LS}(\hat y, y) = \frac{1}{2} (\hat y - y)^2 \), 
+        its derivative is: 
+        \( \frac{d L^{LS}(\hat y, y)}{d \hat y} = (\hat y - y) \).
+        </li>
+        <li>Logit loss for binary classification:
+        \( L^{C}(\hat y, y) = -ln \sigma (\hat y y)  \),
+        its derivative is:
+        \( \frac{L^{C}(\hat y, y)}{d \hat y} = (\sigma(\hat y  y) - 1)  y \).
+        </li>
+    </ul>
+    </p>
+    
+    <h3>Learning FM with Stochastic Gradient Descent</h3>
+    <p> Deriving the gradient of \( \hat y (x) \) with respect to \( \omega \), we have:
+        $$
+         \frac{\partial \hat y}{\partial \omega_0} = 1 
+        $$
+        $$
+         \frac{\partial \hat y}{\partial \omega_i} = x_i
+        $$
+        $$
+         \frac{\partial \hat y}{\partial v_{i, f}} = 
+            \frac{\partial }{\partial v_{i, f}} 
+                \sum_{f=1}^{k}( 
+                    (\sum_{i=1}^{n}{v_{i, f} x_i } )^2 - \sum_{i=1}^{n}{ v_{i, f}^2 x_i^2 } ) =
+            x_i (\sum_j^n{v_{j,f} x_j} - v_{i,f} x_i^2)
+        $$
+    </p>
+    <p>Integerating the above with the gradient descent algorithm of regularized optimization:
+    $$
+     OptReg(S, \lambda) := argmin_{\Theta} 
+        ( \sum_{(x, y) \in S}{l(\hat y(x | \Theta), y) + \sum_{\theta \in \Theta}{\lambda_{\theta} \theta^2 }}  )
+    $$
+    </p>
+    <p>
+    procedure SolveOptReg(S, \( \lambda \))
+    <ol>
+        <li> \( \omega_0 := 0 \) </li>
+        <li> \( w := (0, 0, ..., 0) \) </li>
+        <li> \( V \sim N(0, \sigma) \) </li>
+        <li>repeat until stopping criterion is met
+            <ol>
+                <li>for \( (x, y) \in S \) do
+                    <ol>
+                        <li> \( \partial_0 := \frac{\partial}{\partial \omega_0}(l(\hat y(x | \Theta), y )) \)</li>
+                        <li> \( \omega_0 := \omega_0 - \alpha (2 \lambda_0 \omega_0 + \partial_0) \) </li>
+                        <li> for \( i \in {1, ..., p} \) and \( x_i \ne 0 \) do
+                            <ul>
+                               <li>\( \partial_i := \frac{\partial}{\partial w_i}(l(\hat y(x | \Theta), y )) \) </li>
+                               <li>\( w_i := w_i - \alpha(2 \lambda_w w_i + \partial_i) \)</li>
+                               <li> for \( f \in {1, ..., k} \) do
+                                   <ul>
+                                       <li>\( \partial_{i, f} := \frac{\partial}{\partial v_{i, f}}(l(\hat y(x | \Theta), y )) \)</li>
+                                       <li>\( v_{i, f} := v_{i, f} - \alpha(2 \lambda_f v_{i, f} + \partial_{i, f}) \)</li>
+                                   </ul>
+                               </li>
+                             </ul>
+                        </li>
+                    </ol> 
+                </li>
+            </ol>
+        </li>
+    </ol>
+    </p>
+    
+    <h3>Learning FM using SGD with Adaptive Regularization</h3>
+    <p>The data set is split into training and validation \( S = S_T \cup S_V \), 
+    with \( S_T \) for learning \( \Theta \) and \( S_V \) for tuning \( \lambda \).
+    This can be done by alternating between improving \( \Theta \) while \( \lambda \) is fixed,
+    and improving \( \lambda \) while \( \Theta \) is fixed; with the first part being the same
+    as the above, and we shall derive the second part below:
+    </p>
+    <p>Instead of evaluating:
+    $$
+        \lambda^* | \Theta^t := argmin_{\lambda \in R_+} \sum_{(x, y) \in S_V} l(\hat y(x | \Theta^t), y)
+    $$
+    which, having the right side independent of \( \lambda \), would result in a gradient equals 0;
+    the main idea is to make the dependence of \( \hat y \) on \( \lambda \) to be explicit using:
+    $$
+        \hat y(x | \Theta^t) = w_0^{t+1} + \sum_i^{n}{w_i^{t+1} x_i} + 
+            \sum_{i=1}^n \sum_{j=i+1}^n < v_i^{t+1}, v_j^{t+1} > x_i x_j
+    $$
+    Combining the above with
+    $$
+        \theta^{t+1} = \theta^t - \alpha (
+            \frac{\partial}{\partial \theta^t} l(\hat y (x | \Theta ^ t), y) + 2 \lambda \theta ^ t
+            )
+    $$
+    we have
+    $$
+        \hat y(x | \Theta^{t+1}) = \{ w_0^t - \alpha (
+            \frac{\partial}{\partial \omega_0^t} l(\hat y (x | \Theta ^ t), y) + 2 \lambda \omega_0 ^ t
+            ) \} +
+            \sum_{i = 1}^n x_i \{ w_i^t - \alpha (
+                \frac{\partial}{\partial \omega_i^t} l(\hat y (x | \Theta ^ t), y) + 2 \lambda \omega_i ^ t
+                ) \} +
+            \sum_{i = 1}^n \sum_{j=i+1}^n \sum_{f=1}^{k}[
+                x_i \{
+                    v_{i,f}^t - \alpha (
+                        \frac{\partial}{\partial v_{i,f}^t} l(\hat y (x | \Theta ^ t), y) + 2 \lambda v_{i,f}^t
+                    ) 
+                \}
+                x_j \{
+                    v_{j,f}^t  - \alpha (
+                        \frac{\partial}{\partial v_{j,f}^t} l(\hat y (x | \Theta ^ t), y) + 2 \lambda v_{j,f}^t
+                    ) 
+                \} 
+            ] (Eq.*)
+    $$
+    it follows that we can solve the following:
+    $$
+       \lambda^* | \Theta^t := argmin_{\lambda \in R_+} \sum_{(x, y) \in S_V} l(\hat y(x | \Theta^{t+1}), y)
+    $$
+    which answers the question: "What is the best value of \( \lambda \) such that the next update on \( \Theta \)
+    generates the smallest error on the validation set?"
+    </p>
+    <p>
+    The SGD-update for \( \lambda \) given a case \( (x,y) \in S_V \) is
+    $$
+        \lambda^{t+1} = \lambda^t - \alpha \frac{\partial}{\partial \lambda} l(\hat y(x|\Theta^{t+1}), y)
+    $$
+    </p>
+    <p>Similar to the above, we have derivative of the cost function:
+    $$
+        \frac{\partial}{\partial \lambda}( \hat y(x | \Theta^{t+1}) - y) ^ 2 = 
+            2(\hat y(x | \Theta^{t+1}) - y) \frac{\partial}{\partial \lambda}(\hat y(x | \Theta^{t+1}))
+    $$
+    $$
+        \frac{\partial}{\partial \lambda}{-ln \sigma(\hat y(x | \Theta^{t+1}) y)} =
+            (\sigma(\hat y(x | \Theta^{t+1}) y) - 1) y \frac{\partial}{\partial \lambda}(\hat y(x | \Theta^{t+1})) 
+    $$
+    </p>
+    <p>Differentiate the above future model equation, with \( \lambda_0, \lambda_w, \lambda_f \) corresponds to
+    the regularization coeffficient for \( \omega_0, w_i, v_{i, f} \) respectively,  we have:
+    $$
+        \frac{\partial}{\partial \lambda_0}(\hat y(x | \Theta^{t+1})) = -2 \alpha \omega_0^t
+    $$
+    $$
+        \frac{\partial}{\partial \lambda_w}(\hat y(x | \Theta^{t+1})) = -2 \alpha \sum_{i=1}^n{w_i^t x_i}
+    $$
+    $$
+        \frac{\partial}{\partial \lambda_f}(\hat y(x | \Theta^{t+1})) = -2 \alpha [
+            \sum_{i=1}^n{x_i v_{i,f}^{t+1}} \sum_{j=1}^n{x_j v_{j,f}^t} - \sum_{j=1}^n{x_j^2 v_{j,f}^{t+1} v_{j,f}^t}
+        ]
+    $$
+    which depends both on the current \( v_{i,f}^t \) and future \( v_{i,f}^{t+1} \).
+    </p>
+    <p>In order to enable faster calculation, instead of calculating \( v_{i,f}^{t+1} \) using \( (x,y) \in S_T \),
+    it can be approximated using:
+    $$
+        \tilde v_{i,f}^{t+1} := v_{i,f}^t - \alpha ( \partial_{v_{i,f}} + 2 \lambda v_{i,f}^t ) \approx v_{i,f}^{t+1}
+    $$
+    where \( \partial_{v_{i,f}} \) is the following gradient that has been calculated in the previous \( \Theta \) step.
+    </p>
+    <p>procedure SolveOptAdaptiveReg( \(S_T, S_V \) )
+    <ol>
+        <li> \( \omega_0 := 0 \) </li>
+        <li> \( w := (0, ..., 0) \) </li>
+        <li> \( V := N(0, \sigma) \) </li>
+        <li> \( \lambda := (0, ..., 0) \) </li>
+        <li> \( \partial := (0, .., 0) \) </li>
+        <li> repeat till stopping criterion is met
+        <ol>
+            <li>for \( (x, y) \in S_T \) do</li>
+            <ol>
+                <li>\( \partial_0 := \frac{\partial}{\partial \omega_0} l(\hat y(x|\Theta), y) \)</li>
+                <li>\( \omega_0 := \omega_0 - \alpha (2 \lambda_0 \omega_0 + \partial_0 ) \) </li>
+                <li>for \( i \in \{1, ..., p\} \) and \( x_i \ne 0 \) do
+                    <ol>
+                        <li>\( \partial_i := \frac{\partial}{\partial \omega_i} l(\hat y(x|\Theta), y) \)</li>
+                        <li>\( \omega_i := \omega_i - \alpha ( 2 \lambda_w + \partial_i) \)</li>
+                        <li>for \( f \in \{1, ..., k\} \) do
+                        <ol>
+                            <li>\( \partial_{i,f} := \frac{\partial}{\partial v_{i,f}} l(\hat y(x|\Theta), y) \)</li>
+                            <li>\( v_{i,f} := v_{i,f} - \alpha (2 \lambda_f v_{i,f} + \partial_{i,f} ) \)</li>
+                        </ol>
+                        </li>
+                    </ol>
+                </li>
+                <li>\( (x', y') \sim S_V \)</li>
+                <li>\( \lambda_0 := max(0, \lambda_0 - \alpha \frac{\partial}{\partial \lambda_0} l(\hat y(x'|\tilde \Theta), y)) \)</li>
+                <li>\( \lambda_w := max(0, \lambda_w - \alpha \frac{\partial}{\partial \lambda_w} l(\hat y(x'|\tilde \Theta), y)) \)</li>
+                <li>for \( f \in {1, ..., k} \) do
+                    <ol>
+                    <li>\( \lambda_f := max(0, \lambda_f - \alpha \frac{\partial}{\partial \lambda_f} l(\hat y(x'|\tilde \Theta), y)) \)</li>
+                    </ol>
+                </li>
+            </ol>
+        </ol>
+        </li>
+    </ol>
+    </p>
+    
+    <h3>Learning FM with Alternating Least Square</h3>
+    <p></p>
+    
+    <h3>Learning FM with Markov Chain Monte Carlo</h3>
+    <p></p>
+    
+    <h2>Simulation</h2>
+    <p>
+    </p>
+    <hr/>
+    
+    <h2>Algorithm</h2>
+    <p>
+    </p>
+    <hr/>
+    
+    <h2>Implementation</h2>
+    <div id='code'></div>
+    <hr/>
+    
+    <h2>Note</h2>
+    <p>
+    </p>
+    <hr/>
+    
+    <h2>Reference</h2>
+    <ul>
+        <li>S. Rendle, 2012, Learning Recommender Systems With Adaptive Regularization.</li>
+    </ul>
+    <hr/>
+    
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'weidongtomlgithubio'; // required: replace example with your forum shortname
+        // var disqus_url = 'http://weidongtoml.github.io/sampling/index.html';
+        // var disqus_developer = 1;
+        var disqus_identifier = '';
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</body>
+</html>
+    
+        
