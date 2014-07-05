@@ -128,26 +128,38 @@
     <h2>Introduction</h2>
 
     <p>The Box-Muller Transform transforms a two-dimentional constinuous uniform distribution to a two dimensional bivariate normal distribution using:
-        $$ Z_1 = \sqrt{-2 ln U_1} cos(2 \pi U_2) $$
-        $$ Z_2 = \sqrt{-2 ln U_1} sin(2 \pi U_1) $$
+        $$ z_1 = \sqrt{-2 ln u_1} cos(2 \pi u_2) $$
+        $$ z_2 = \sqrt{-2 ln u_1} sin(2 \pi u_1) $$
         where \( Z_1, Z_2 \sim N(0, 1) \) and \( U_1, U_2 \sim U(0, 1) \).
     </p>
-    <p>This can be verified by using the above equation, solve for \( X_1, X_2 \) to obtain:
-        $$ U_1 = e ^ {- \frac{(Z_1 ^ 2 + Z_2 ^ 2)}{2} } $$
-        $$ U_2 = \frac{1}{(2 \pi)} tan^{-1}(\frac{Z_2}{Z_1}) $$
+    <p>This can be verified by using the above equation, solve for \( u_1, u_2 \) to obtain:
+        $$ u_1 = e ^ {- \frac{(z_1 ^ 2 + z_2 ^ 2)}{2} } $$
+        $$ u_2 = \frac{1}{(2 \pi)} tan^{-1}(\frac{z_2}{z_1}) $$
         taking the Jacobian to obtain:
-        $$ \frac{ \partial (U_1, U_2) }{ \partial (Z_1, Z_2) } 
+        $$ \frac{ \partial p_{(U_1, U_2)}(u_1, u_2) }{ \partial p_{(Z_1, Z_2)}(z_1, z_2) } 
             = { \begin{bmatrix}
-                 \ \frac{ \partial(U_1) }{ \partial(Z_1) }  &   \frac{ \partial(U_1) }{ \partial(Z_2) } \\
-                 \ \frac{ \partial(U_2) }{ \partial(Z_1) }  &   \frac{ \partial(U_2) }{ \partial{Z_2} }
+                 \ \frac{ \partial p_{U_1}(u_1) }{ \partial p_{Z_1}(z_1) }  &   \frac{ \partial p_{U_1}(u_1) }{ \partial  p_{Z_1}(z_2) } \\
+                 \ \frac{ \partial p_{U_2}(u_2) }{ \partial p_{Z_1}(z_1) }  &   \frac{ \partial p_{U_2}(u_2) }{ \partial  p_{Z_2}{z_2} }
               \end{bmatrix} } 
-            = -( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_1 ^ 2 }{ 2 }} )( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_2 ^ 2 }{ 2 }} )
+            = -( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ z_1 ^ 2 }{ 2 }} )( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ z_2 ^ 2 }{ 2 }} )
         $$
         Using the change of variable rules of density function, we have
         $$
-            P_{(Z_1, Z_2)}(z_1, z_2) = P_{(U_1, U_2)}(u_1, u_2) \left| \frac{ \partial (U_1, U_2) }{ \partial (Z_1, Z_2) } \right|
-                =  P_{(U_1, U_2)}(u_1, u_2) ( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_1 ^ 2 }{ 2 }} )( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_2 ^ 2 }{ 2 }} )
+            p_{(Z_1, Z_2)}(z_1, z_2) 
+                = p_{(U_1, U_2)}(u_1, u_2) \left| \frac{ \partial p_{(U_1, U_2)}(u_1, u_2) }{ \partial p_{(Z_1, Z_2)}(z_1, z_2) } \right|
+                =  p_{(U_1, U_2)}(u_1, u_2) ( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_1 ^ 2 }{ 2 }} )( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_2 ^ 2 }{ 2 }} )
+        $$ 
+        since the probability density function of uniform distribution is 1, i.e. \( p_{(U_1, U_2)}(u_1, u_2) = p_{U_1}(u_1) \cdot p_{U_2}(u_2) = 1 \), therefore
         $$
+            p_{(Z_1, Z_2)}(z_1, z_2)
+                = ( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_1 ^ 2 }{ 2 }} ) \cdot ( \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_2 ^ 2 }{ 2 }} )
+                = p_{Z_1}(z_1) \cdot p_{Z_2}(z_2) \\
+                
+            p_{Z_1}(z_1) = \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_1 ^ 2 }{ 2 }} \\
+            
+            p_{Z_2}(z_2) = \frac{ 1 }{ \sqrt{2 \pi} } e^{-\frac{ Z_2 ^ 2 }{ 2 }}
+        $$
+        hence, \( Z_1 \sim N(0, 1), Z_2 \sim N(0, 1) \).
     </p>
     <hr/>
     
@@ -183,8 +195,8 @@
     <h2>Note</h2>
     <h3>The Change of Variable Technique</h3>
     <p>Consider a change  of variables \(x  = g(y) \), then a function \( f(x) \) becomes \( \tilde{f}(x) = f(g(x)) \). 
-        Let \( p_x{x} \) corresponds to a density \( p_y(y) \) with respect to the new variable \( y \), where the suffices denote that they are different densities. Observations falling in the range \( (x, x + \delta x ) \) will, for small values of \( \delta x \), be transformed into the range of \( (y, y + \delta y ) \) where \( p_x(x) \delta x \approx p_y(y) \delta y \) and hence:
-        $$ p_y(y) = p_x(x) \left|{ \frac{dx}{dy} }\right| $$ 
+        Let \( p_x(x) \) corresponds to a density \( p_y(y) \) with respect to the new variable \( y \), where the suffices denote that they are different densities. Observations falling in the range \( (x, x + \delta x ) \) will, for small values of \( \delta x \), be transformed into the range of \( (y, y + \delta y ) \) where \( p_x(x) \delta x \approx p_y(y) \delta y \) and hence:
+        $$ p_y(y) = p_x(x) \cdot \left|{ \frac{dx}{dy} }\right| $$ 
     </p>
     <p>
     </p>
