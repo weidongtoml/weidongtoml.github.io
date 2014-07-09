@@ -10,9 +10,465 @@
     <script type="text/javascript" src="../js/shCore.js"></script>
     <script type="text/javascript" src="../js/shBrushJScript.js"></script>
     <script type="text/javascript" src="../js/util.js"></script>
+    <script type="text/javascript" src="../js/rnd.js"></script>
+    <script type="text/javascript" src="../js/data_set.js"></script>
+    <style type="text/css">
+    #graph {
+        width: 600px;
+        height: 600px;
+    }
+    </style>
     <script type="text/javascript" id="main_script">
     // [MainScriptStarts]
+    
+    function logit(x) {
+      return 1.0 / (1.0 + Math.exp(-x));
+    }
+    
+    var square = function(x) {
+      return x * x;
+    }
+
+    var FactorizedModel = (function(){
+      var w0 = 0;
+      var w = [];
+      var v = [];
+      var num_features = 0;
+      var num_factors = 0;
+      
+      // model_spec = {num_features, number_factors}
+      var init = function(model_spec) {
+        num_features = model_spec.num_features;
+        num_factors = model_spec.num_factors;
+        var sigma = model_spec.sigma;
+        
+        w0 = 0;
+        w = [];
+        for (var i = 0; i < num_features; ++i) {
+          w.push(0);
+        }
+        var guassian_rnd = $RND.gaussian_rng(0, sigma);
+        v = [];
+        for (var i = 0; i < num_features; ++i) {
+          var cur_factors = [];
+          for (var j = 0; j < num_factors; ++j) {
+            cur_factors.push(guassian_rnd());
+          }
+          v.push(cur_factors);
+        }
+      }
+      
+      var predict = function(x) {
+        var r = w0;
+        for (var i = 0; i < num_features; ++i) {
+          r += w[i] * x[i];
+        }
+        for (var f = 0; f < num_factors; ++f) {
+          var v_x_sum  = 0;
+          var v_x_sum_sq = 0;
+          for (var i = 0; i < num_features; ++i) {
+            v_x_sum += v[i][f] * x[i];
+            v_x_sum_sq += square(v[i][f] * x[i]);
+          }
+          r += 0.5 * (square(v_x_sum) - v_x_sum_sq);
+        }
+        return r;
+      }
+
+      // train_spec = {num_epochs, learning_rate, regularization}
+      var train = function(train_spec, training_set) {
+        var reg = train_spec.regularization;
+        var alpha = train_spec.learning_rate;
+        for (var epoch = 0; epoch < train_spec.num_epochs; epoch++) {
+          var cost = 0.0;
+          for (var data_i = 0; data_i < training_set.length; ++data_i) {
+            var x = training_set[data_i].x;
+            var y = training_set[data_i].y;
+            var hat_y = predict(x);
+            cost += get_cost(y, hat_y, train_spec.type);
+            //console.log(cost / (data_i + 1));
+            var gradients = gradient(x, y, hat_y, train_spec.type);
+            w0 -= alpha * (2 * reg.lambda_0 * w0 + gradients.grad_w0);
+            for (var i = 0; i < num_features; ++i) {
+              w[i] -= alpha * (2 * reg.lambda_w * w[i] + gradients.grad_w[i]);
+              for (var f = 0; f < num_factors; ++f) {
+                v[i][f] -= alpha * (2 * reg.lambda_f * v[i][f] + gradients.grad_v[i][f]);
+              }
+            }
+          }
+          console.log("Epoch: " + epoch + " cost = " + (cost / training_set.length));
+        }
+      }
+      
+      var get_cost = function(y, hat_y, cost_type) {
+          if (cost_type == 'classification') {
+              return -Math.log(logit(y * hat_y));
+          } else if (cost_type == 'regression') {
+              return 0.5 * square(y - hat_y);
+          } else {
+              return hat_y;
+          }
+      }
+      
+      var gradient = function(x, y, hat_y, cost_type) {
+          var DcostDhat_y = 0;
+          if (cost_type == 'classification') {
+              DcostDhat_y = (logit(y * hat_y) - 1) * y;
+          } else if (cost_type == 'regression') {
+              DcostDhat_y = (hat_y - y);
+          } else {
+              DcostDhat_y = 1.0;
+          }
+          
+          var partial_0 = DcostDhat_y * 1.0; // Dhat_y/Dw0 = 1
+          var partial_i = [];
+          var partial_i_f = [];
+          for (var i = 0; i < num_features; ++i) {
+            partial_i.push(DcostDhat_y * x[i]); // Dhat_y/Dw_i = x_i
+            
+            partial_i_f.push([]);
+            for (var f = 0; f < num_factors; ++f) {
+              var sum_v_x = 0;
+              for (var j = 0; j < num_features; ++j) {
+                sum_v_x += v[j][f] * x[j];
+              }
+              var Dhat_yDv_if = x[i]*( sum_v_x - v[i][f] * x[i]);
+              partial_i_f[i].push(DcostDhat_y * Dhat_yDv_if); 
+            }
+          }
+          return {
+        	   grad_w0: partial_0,
+        	   grad_w: partial_i,
+        	   grad_v: partial_i_f,
+          };
+      }
+
+      var test_gradient = function() {
+        var old_w0 = w0;
+        var old_w = [];
+        for (var i = 0; i < w.length; ++i) {
+        	   old_w.push(w[i]);
+        }
+        var old_v = [];
+        for (var i = 0; i < w.length; ++i) {
+          var v_copy = [];
+          for (var f = 0; f < num_factors; ++f) {
+        	    v_copy.push(v[i][f]);
+          }
+          old_v.push(v_copy);
+        }
+        var old_num_features = num_features;
+        var old_num_factors = num_factors;
+        
+        w0 = 0.05;
+        w = [0.02, 0.03];
+        v = [[0.04, 0.05], [0.06, 0.07]];
+        num_features = 2;
+        num_factors = 2;
+    	    
+        var costs = ['identity', 'classification', 'regression'];
+        for (var c = 0; c < costs.length; ++c) {
+	    	    var cost_type = costs[c];
+	    	    console.log("Testing for [" + cost_type + "]");
+	    	    var x = [1.24, 2.34];
+	    	    var y = 1.0;
+	    	    var hat_y = predict(x);
+	    	    var grads = gradient(x, y, hat_y, cost_type);
+            var epsilon = 0.0000001;
+            var delta =   0.00005;
+            
+	    	    // check grad_w0
+	    	    w0 = old_w0 + epsilon;
+	    	    var p_cost_w0 = get_cost(y, predict(x), cost_type);
+	    	    w0 = old_w0 - epsilon;
+	    	    var n_cost_w0 = get_cost(y, predict(x), cost_type);
+	    	    w0 = old_w0;
+	    	    var grad_w0 = (p_cost_w0 - n_cost_w0) / (2 * epsilon);
+	    	    var msg = "grad_w0, expected: [" + grad_w0 + "] got [" + grads.grad_w0 +"].";
+	    	    if (Math.abs(grads.grad_w0 - grad_w0) > delta) {
+	    	    	  console.log("Incorrect: " + msg);
+	    	    } else {
+	    	    	  console.log("Correct: " + msg);
+	    	    }
+	    	    
+	    	    // check grad_wi
+	    	    for (var i = 0; i < num_features; ++i) {
+	    	    	  w[i] += epsilon;
+	    	    	  var p_cost = get_cost(y, predict(x), cost_type);
+	    	    	  w[i] -= 2 * epsilon;
+	    	    	  var n_cost = get_cost(y, predict(x), cost_type);
+	    	    	  var grad_w_i = (p_cost - n_cost) / (2 * epsilon);
+	    	    	  var msg = "grad_w[" + i + "], expected to be [" + grad_w_i +  "] got [" + grads.grad_w[i] + "].";
+	    	    	  if (Math.abs(grads.grad_w[i] - grad_w_i) > delta) {
+	    	    		console.log("Incorrect: " + msg);
+	    	    	  } else {
+	    	    		console.log("Correct: " + msg);
+	    	    	  }
+	    	    	  w[i] += epsilon;
+	    	    }
+	    	    
+	    	    // check grad_v
+	    	    for (var i = 0; i < num_features; ++i) {
+	    	    	  for (var f = 0; f < num_factors; ++f) {
+	    	    		v[i][f] += epsilon;
+	    	    		var p_cost = get_cost(y, predict(x), cost_type);
+	    	    		v[i][f] -= 2 * epsilon;
+	            var n_cost = get_cost(y, predict(x), cost_type);
+	            var grad_v_i_f = (p_cost - n_cost) / (2 * epsilon);
+	            var msg = "grad_v[" + i +"]["+f+"], expected to be [" + grad_v_i_f + "], got [" + grads.grad_v[i][f]+ "].";
+	            if (Math.abs(grads.grad_v[i][f] - grad_v_i_f) > delta) {
+	                console.log("Incorrect: " + msg);
+	            } else {
+	                console.log("Correct: " + msg);
+	            }
+	            v[i][f] -= epsilon;
+	    	    	  }
+	    	    }
+        }
+    	    
+    	    w0 = old_w0;
+    	    w = old_w;
+    	    v = old_v;
+    	    num_features = old_num_features;
+    	    num_factors = old_num_factors;
+      }
+      
+      var dump = function() {
+    	    var str = 'w0 = ' + w0;
+    	    str += ', w = [';
+    	    for (var i = 0; i < num_features; ++i) {
+    	    	  str += w[i] + ', ';
+    	    }
+    	    str += ']';
+    	    str += 'v = [';
+    	    for (var i = 0; i < num_features; ++i) {
+    	    	  str += '[';
+    	    	  for (var f = 0; f < num_factors; ++f) {
+    	    		str += v[i][f] + ', ';
+    	    	  }
+    	    	  str += '],';
+    	    }
+    	    str += ']';
+    	    return str;
+      }
+      
+      return {
+        Init: init,
+        Predict: predict,
+        Train: train,
+        Test: test_gradient,
+        Dump: dump,
+      };
+    })();
+    
+
     // [MainScriptEnds]
+    
+    var convert_data_to_sample = function(train_data) {
+      var samples = [];
+      for (var i = 0; i < train_data.length; ++i) {
+        samples.push({
+          x: [train_data[i][0], train_data[i][1]],
+          y: train_data[i][2],
+        });
+      }
+      return samples;
+    }
+    
+    // Retrieve plot point coordinates for the plot.
+    var get_plot_data = function(train_data) {
+        var X0 = [];
+        var x0_i = 0;
+        var X1 = [];
+        var x1_i = 0;
+        var min_x0 = 1000;
+        var max_x0 = 0;
+        for (var i = 0; i < train_data.length; ++i) {
+            if (train_data[i][0] < min_x0) {
+                min_x0 = train_data[i][0];
+            }
+            if (train_data[i][0] > max_x0) {
+                max_x0 = train_data[i][0];
+            }
+    
+            if (train_data[i][2]>0) {
+                X0[x0_i] = {
+                    x: train_data[i][0],
+                    y: train_data[i][1],
+                };
+                x0_i++;
+            } else {
+                X1[x1_i] = {
+                    x: train_data[i][0],
+                    y: train_data[i][1],
+                };
+                x1_i++;
+            }
+        };
+        return {
+            "positives": X0, 
+            "negatives": X1,
+            "max_x0": max_x0, 
+            "min_x0": min_x0,
+        };
+    };
+
+    // Plot the graph with the given boundary B.
+    var plot_graph = function(container, data, boundary) {
+        chart = new Highcharts.Chart({
+            chart: {
+                renderTo: container,
+                type: 'scatter',
+                zoomType: 'xy'
+            },
+            title: {
+                text: 'Classification Simulation'
+            },
+            xAxis: {
+                title: {
+                    enabled: true,
+                    text: 'x1'
+                },
+                startOnTick: true,
+                endOnTick: true,
+                showLastLabel: true
+            },
+            yAxis: {
+                title: {
+                    text: 'x2'
+                }
+            },
+            tooltip: {
+                formatter: function() {
+                        return ''+
+                        this.x +' , '+ this.y;
+                }
+            },
+            legend: {
+                layout: 'vertical',
+                align: 'left',
+                verticalAlign: 'top',
+                x: 100,
+                y: 70,
+                floating: true,
+                backgroundColor: '#FFFFFF',
+                borderWidth: 1
+            },
+            plotOptions: {
+                scatter: {
+                    marker: {
+                        radius: 5,
+                        states: {
+                            hover: {
+                                enabled: true,
+                                lineColor: 'rgb(100,100,100)'
+                            }
+                        }
+                    },
+                    states: {
+                        hover: {
+                            marker: {
+                                enabled: false
+                            }
+                        }
+                    }
+                }
+            },
+            series: [{
+                name: 'Positive',
+                color: 'rgba(223, 83, 83, .5)',
+                data: data["positives"]
+    
+            }, {
+                name: 'Negative',
+                color: 'rgba(119, 152, 191, .5)',
+                data: data["negatives"]
+            }, /*{
+                name: 'Decision Bounday',
+                type: 'line',
+                data: boundary
+            }*/]
+        });
+    };
+    
+    Array.prototype.shuffle = function() {
+    	  var tmp = [];
+    	  while (this.length) {
+    		tmp.push(this.splice(Math.random()* this.length, 1));
+    	  }
+    	  while (tmp.length) {
+    		this.push(tmp.pop());
+    	  }
+    	  return this;
+    }
+
+    $(document).ready(function(){
+        var plot_data = get_plot_data(DataSet.classification[0]);
+        plot_graph("graph", plot_data);
+        
+        var model_spec = {
+          num_features: 2,
+          num_factors: 4,
+          sigma: 0.001,
+        };
+        FactorizedModel.Init(model_spec);
+        
+        var train_spec = {
+          type: 'regression',
+          num_epochs: 500,
+          learning_rate: 0.01,
+          regularization: {
+            lambda_0: 0.0,
+            lambda_w: 0.0,
+            lambda_f: 0.0,
+          }
+        };
+        DataSet.classification[0].shuffle;
+        
+        var training_set = convert_data_to_sample(DataSet.classification[0]);
+        FactorizedModel.Test();
+        
+        FactorizedModel.Train(train_spec, training_set);
+        
+        console.log(FactorizedModel.Dump());
+       
+        var prediction_result = [];
+        var tp = 0, tn = 0, fp = 0, fn = 0;
+        for (var i = 0; i < training_set.length; ++i) {
+          var cur_instance = [];
+          var x = training_set[i].x;
+          var y = training_set[i].y;
+          var r = FactorizedModel.Predict(x);
+          var is_true = y > 0;
+          var is_pos = logit(r) >= 0.5;
+          if (is_true == is_pos) {
+            if (is_true) {
+              tp++;
+            } else {
+              tn++;
+            }
+          } else {
+            if (is_true) {
+              fn++;
+            } else {
+              fp++;
+            }
+          }
+          
+          if (is_pos) {
+            prediction_result.push([x[0], x[1], 1]);
+          } else {
+            prediction_result.push([x[0], x[1], 0]);
+          }
+        }
+        console.log("TP: " + tp + " FN: " + fn + " FP:" + fp + " TN: " + tn);
+        console.log("F-score: ")
+        
+        var predict_graph_data = get_plot_data(prediction_result);
+        plot_graph("pred_graph", predict_graph_data);
+        
+        RenderCodeSection('main_script', 'code');
+    });
     </script>
 </head>
 <body>
@@ -69,8 +525,8 @@
          \frac{\partial \hat y}{\partial v_{i, f}} = 
             \frac{\partial }{\partial v_{i, f}} 
                 \sum_{f=1}^{k}( 
-                    (\sum_{i=1}^{n}{v_{i, f} x_i } )^2 - \sum_{i=1}^{n}{ v_{i, f}^2 x_i^2 } ) =
-            x_i (\sum_j^n{v_{j,f} x_j} - v_{i,f} x_i^2)
+                    (\sum_{j=1}^{n}{v_{j, f} x_j } )^2 - \sum_{i=1}^{n}{ v_{i, f}^2 x_i^2 } ) =
+            x_i (\sum_j^n{v_{j,f} x_j} - v_{i,f} x_i)
         $$
     </p>
     <p>Integerating the above with the gradient descent algorithm of regularized optimization:
@@ -247,6 +703,9 @@
     <h2>Simulation</h2>
     <p>
     </p>
+    <div>
+        <span id="graph"></span><span id="pred_graph"></span>
+    </div>
     <hr/>
     
     <h2>Algorithm</h2>
