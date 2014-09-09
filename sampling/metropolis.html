@@ -160,11 +160,6 @@
             subtitle: {
                 text: 'Number of Samples: ' + num_samples + ', Stdev of Sampler: ' + sigma + ', Acceptance Rate: ' + (accepted_cnt / num_samples),
             },
-            plotOptions: {
-                series: {
-                    lineWidth: 1,
-                }
-            },
             tooltip: {
                 formatter: function() { 
                     if (this.series.name === 'Samples') {
@@ -177,14 +172,16 @@
             series: [{
                 name: 'Bivariate Gaussian',
                 data: points,
-                type: 'scatter',
+                type: 'line',
+                lineWidth: 1,
             },{
                 name: 'Samples',
                 data: sample_points,
                 type: 'scatter',
                 marker: {
                     symbol: 'circle',
-                }
+                },
+                lineWidth: 1,
             }],
         });
         
