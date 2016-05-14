@@ -255,8 +255,8 @@ var createTableView = function(state, div_id) {
         rowCounter++;
         return $('<tr id="' + row_id + '" class="tb_row" >' +
                 '<td>' + rowCounter + '</td>' +
-                '<td><input name="city" type="text"/></td>' +
-                '<td><input name="data" type="text"/></td>' +
+                '<td><input name="city" type="text" placeholder="Tokyo"/></td>' +
+                '<td><input name="data" type="text" placeholder="123214"/></td>' +
                 '<td>' +
                 '<input name="locate_button" type="button" value="Locate" class="control_button locate_button"/> | ' +
                 '<input name="delete_button" type="button" value="Delete" class="control_button delete_button"/>' +
@@ -519,9 +519,8 @@ var initEnv = function() {
          * Check if the given data_point is valid, i.e. containing all the necessary information.
          */
         var isValidDataPoint = function(data_point) {
-            return data_point.city !== '' && !isNaN(data_point.data) &&
-                    !isNaN(data_point.lat) && !isNaN(data_point.lng) &&
-                    data_point.lat !== null && data_point.lng !== null;
+            return data_point.city !== '' && !isNaN(data_point.data) && data_point.data !== null &&
+                    !isNaN(data_point.lat) && !isNaN(data_point.lng) && data_point.lat !== null && data_point.lng !== null;
         };
 
         var getDataPoints = function() {
@@ -530,7 +529,7 @@ var initEnv = function() {
 
         var updateDataPoints = function(data_points) {
             // TODO(weidong): add sanity check
-            state.data_points = data_points
+            state.data_points = data_points;
         };
 
         return {
