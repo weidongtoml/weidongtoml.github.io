@@ -62,7 +62,7 @@
             border: none;
             border-bottom: 1px solid black;
             font-size: 15px;
-            line-weight: 20px;
+            line-height: 20px;
             text-align: center;
         }
 
@@ -113,13 +113,19 @@
             margin-top: 20px;
         }
 
-        #views .append_control .control_button.append_button,
-        #views .append_control .control_button.locate_all_button
+        #views .append_control .control_button.append_button
         {
             text-align: center;
             width: 150px;
-            margin: 0 auto;
+            margin-left: 150px;
+        }
+
+        #views .control_button.update_map_button
+        {
+            text-align: center;
+            width: 150px;
             padding-left: 20px;
+            margin-top: 20px;
         }
 
         #views .control_button.delete_button {
@@ -133,15 +139,26 @@
         }
 
         #views #data_view .json_data {
-            width: 100%;
+            width: 95%;
             height: 400px;
             resize: vertical;
             font-size: 15px;
+            margin: 0 auto;
         }
 
         #views #map_view {
+            width: 95%;
+            margin: 0 auto;
+        }
+
+        #views #map_view #google_map {
             width: 100%;
-            height: 400px;
+            height: 500px;
+        }
+
+        #norm_params {
+            margin-left: 50px;
+            width: 400px;
         }
 
     </style>
@@ -156,7 +173,9 @@
 <div id="views">
     <div id="table_view" class="view"></div>
     <div id="data_view" class="view"></div>
-    <div id="map_view" class="view"></div>
+    <div id="map_view" class="view">
+        <div id="google_map" ></div>
+    </div>
 </div>
 <script>
 
@@ -508,10 +527,6 @@ var createDataView = function(state, div_id) {
 
 var createMapView = function(state, div_id) {
 
-    var normalize = function(d) {
-        return  (Math.log10(d) + 1) * 10000;
-    };
-
     var plotPoint = function(data_point, map) {
         var cityCircle = new google.maps.Circle({
             strokeColor: '#FF0000',
@@ -543,11 +558,78 @@ var createMapView = function(state, div_id) {
         }
     };
 
+    var param_a = 10000;
+    var param_b = 1;
+    var param_c = 0;
+    var param_norm_func = 'default';
+    var updateNormParams = function() {
+        var norm_params = $('#norm_params');
+        var a = parseFloat(norm_params.find('input[name=param_a]').val());
+        var b = parseFloat(norm_params.find('input[name=param_b]').val());
+        var c = parseFloat(norm_params.find('input[name=param_c]').val());
+        var selected = norm_params.find("input[type='radio'][name='norm_func']:checked");
+        var selectedVal = (selected.length > 0) ? selected.val() : 'unknown';
+        if (selectedVal === 'log') {
+            if (a > 0 && b >= 1 && c >= 0) {
+                param_a = a;
+                param_b = b;
+                param_c = c;
+                param_norm_func = selectedVal;
+                return true;
+            } else {
+                console.error('required a > 0, b >= 1, c >= 0, but got [' + a + ',' + b + ', ' + c + ']');
+            }
+        } else if (selectedVal === 'linear') {
+            if (a > 0 && b > 0 && c >= 0) {
+                param_a = a;
+                param_b = b;
+                param_c = c;
+                param_norm_func = selectedVal;
+                return true;
+            } else {
+                console.error('required a > 0, b > 0, c >= 0, but got [' + a + ',' + b + ', ' + c + ']');
+            }
+        } else {
+            console.error('Unknown function name: ' + selectedVal);
+        }
+        return false;
+    };
+
+    var normalize = function(x) {
+        if (param_norm_func === 'log') {
+            return param_a * (Math.log10(x) + param_b) + param_c;
+        } else if (param_norm_func === 'linear') {
+            return (x + param_a) / param_b + param_c;
+        }
+        return  (Math.log10(x) + 1) * 10000;
+    };
+
     var renderMap = function() {
         var suva = {lat: -18.125, lng: 178.450};
         var us = {lat: 37.090, lng: -95.712};
         var tokyo = {lat: 35.689, lng: 139.692};
-        var map = new google.maps.Map(document.getElementById(div_id), {
+
+        if ($('#norm_params').length === 0) {
+            var update_map_button = $('<input type="button" name="redraw_map" value="Updaete Map" class="control_button update_map_button"/>' )
+                    .click(function(){
+                        updateNormParams();
+                        renderMap();
+                    });
+            var norm_param_form = $('<div id="norm_params"><hr />' +
+                    '<p>Normailization Function:</p>' +
+                    '<input type="radio" name="norm_func" value="log" checked="checked"/> Logarithmic:  Y = a * (log10(x) + b) + c<br/>' +
+                    '<input type="radio" name="norm_func" value="linear"/> Linear: Y = (x + a) / b + c <br/>' +
+                    '<p>Parameters:</p></p>' +
+                    '<label>a: </label><input type="text" name="param_a" value="10000"/><br/>' +
+                    '<label>b: </label><input type="text" name="param_b" value="1"/><br/>' +
+                    '<label>c: </label><input type="text" name="param_c" value="1"/><br/>' +
+                    '</div>').append(update_map_button);
+
+            $('#' + div_id).append(norm_param_form);
+        }
+
+
+        var map = new google.maps.Map(document.getElementById('google_map'), {
             zoom: 2,
             center: tokyo,
             mapTypeId: google.maps.MapTypeId.TERRAIN
@@ -568,7 +650,7 @@ var createMapView = function(state, div_id) {
  */
 var initEnv = function() {
     var geocoderObj =  new google.maps.Geocoder();
-    var mapObj = new google.maps.Map(document.getElementById('map_view'), {
+    var mapObj = new google.maps.Map(document.getElementById('google_map'), {
         zoom: 4,
         center: {lat: 37.090, lng: -95.712},
         mapTypeId: google.maps.MapTypeId.TERRAIN
