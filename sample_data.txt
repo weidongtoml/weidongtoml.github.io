@@ -1,0 +1,786 @@
+[
+    {
+        "id": 0,
+        "city": "San Francisco Bay Area ",
+        "data": 25150,
+        "lat": 37.827,
+        "lng": -122.291
+    },
+    {
+        "id": 1,
+        "city": "Greater Seattle Area ",
+        "data": 21746,
+        "lat": 47.606,
+        "lng": -122.343
+    },
+    {
+        "id": 2,
+        "city": "Greater Atlanta Area ",
+        "data": 3834,
+        "lat": 53.369,
+        "lng": -2.281
+    },
+    {
+        "id": 3,
+        "city": "New York City Area ",
+        "data": 3756,
+        "lat": 40.605,
+        "lng": -74.12
+    },
+    {
+        "id": 4,
+        "city": "Bengaluru Area, India ",
+        "data": 3175,
+        "lat": 12.91,
+        "lng": 77.604
+    },
+    {
+        "id": 5,
+        "city": "Hyderabad Area, India ",
+        "data": 1967,
+        "lat": 17.526,
+        "lng": 78.352
+    },
+    {
+        "id": 6,
+        "city": "Raleigh-Durham, North Carolina Area ",
+        "data": 1526,
+        "lat": 35.899,
+        "lng": -78.864
+    },
+    {
+        "id": 7,
+        "city": "Austin, Texas Area ",
+        "data": 1376,
+        "lat": 30.319,
+        "lng": -97.688
+    },
+    {
+        "id": 8,
+        "city": "Pune Area, India ",
+        "data": 1206,
+        "lat": 18.594,
+        "lng": 73.907
+    },
+    {
+        "id": 9,
+        "city": "San Diego Area ",
+        "data": 1151,
+        "lat": 27.764,
+        "lng": -98.239
+    },
+    {
+        "id": 10,
+        "city": "Greater Los Angeles Area ",
+        "data": 1021,
+        "lat": 34.013,
+        "lng": -117.812
+    },
+    {
+        "id": 11,
+        "city": "Zürich Area, Switzerland ",
+        "data": 691,
+        "lat": 47.377,
+        "lng": 8.542
+    },
+    {
+        "id": 12,
+        "city": "Orlando, Florida Area ",
+        "data": 625,
+        "lat": 28.424,
+        "lng": -81.436
+    },
+    {
+        "id": 13,
+        "city": "Chennai Area, India ",
+        "data": 605,
+        "lat": 13.057,
+        "lng": 80.24
+    },
+    {
+        "id": 14,
+        "city": "Dallas/Fort Worth Area ",
+        "data": 511,
+        "lat": 32.82,
+        "lng": -97.005
+    },
+    {
+        "id": 15,
+        "city": "Beijing City, China ",
+        "data": 469,
+        "lat": 39.904,
+        "lng": 116.407
+    },
+    {
+        "id": 16,
+        "city": "Nice Area, France ",
+        "data": 401,
+        "lat": 44.063,
+        "lng": 7.617
+    },
+    {
+        "id": 17,
+        "city": "Shanghai City, China ",
+        "data": 379,
+        "lat": 31.23,
+        "lng": 121.474
+    },
+    {
+        "id": 18,
+        "city": "Greater Chicago Area ",
+        "data": 354,
+        "lat": 42.257,
+        "lng": -88.212
+    },
+    {
+        "id": 19,
+        "city": "Tucson, Arizona Area ",
+        "data": 290,
+        "lat": 32.312,
+        "lng": -111.032
+    },
+    {
+        "id": 20,
+        "city": "Washington D.C. Metro Area ",
+        "data": 279,
+        "lat": 13.143,
+        "lng": 123.748
+    },
+    {
+        "id": 21,
+        "city": "Vancouver, Canada Area ",
+        "data": 273,
+        "lat": 49.288,
+        "lng": -123.114
+    },
+    {
+        "id": 22,
+        "city": "Noida Area, India ",
+        "data": 262,
+        "lat": 28.536,
+        "lng": 77.392
+    },
+    {
+        "id": 23,
+        "city": "London, United Kingdom ",
+        "data": 218,
+        "lat": 51.507,
+        "lng": -0.128
+    },
+    {
+        "id": 24,
+        "city": "Berlin Area, Germany ",
+        "data": 204,
+        "lat": 52.52,
+        "lng": 13.405
+    },
+    {
+        "id": 25,
+        "city": "New Delhi Area, India ",
+        "data": 201,
+        "lat": 28.685,
+        "lng": 77.098
+    },
+    {
+        "id": 26,
+        "city": "Denver Area ",
+        "data": 193,
+        "lat": 14.34,
+        "lng": 120.933
+    },
+    {
+        "id": 27,
+        "city": "Ithaca, New York Area ",
+        "data": 183,
+        "lat": 42.45,
+        "lng": -76.374
+    },
+    {
+        "id": 28,
+        "city": "Colorado Springs, Colorado Area ",
+        "data": 155,
+        "lat": 38.812,
+        "lng": -104.68
+    },
+    {
+        "id": 29,
+        "city": "Baltimore, Maryland Area ",
+        "data": 138,
+        "lat": 39.369,
+        "lng": -76.555
+    },
+    {
+        "id": 30,
+        "city": "Orange County, California Area ",
+        "data": 136,
+        "lat": 33.776,
+        "lng": -117.791
+    },
+    {
+        "id": 31,
+        "city": "Geneva Area, Switzerland ",
+        "data": 133,
+        "lat": 46.232,
+        "lng": 6.059
+    },
+    {
+        "id": 32,
+        "city": "District Brno-City, Czech Republic ",
+        "data": 132,
+        "lat": 49.195,
+        "lng": 16.607
+    },
+    {
+        "id": 33,
+        "city": "Paris Area, France ",
+        "data": 106,
+        "lat": 48.857,
+        "lng": 2.352
+    },
+    {
+        "id": 34,
+        "city": "Toronto, Canada Area ",
+        "data": 106,
+        "lat": 43.623,
+        "lng": -79.369
+    },
+    {
+        "id": 35,
+        "city": "Shanghai Suburb, China ",
+        "data": 104,
+        "lat": 31.624,
+        "lng": 121.397
+    },
+    {
+        "id": 36,
+        "city": "Melbourne, Florida Area ",
+        "data": 87,
+        "lat": 28.121,
+        "lng": -80.645
+    },
+    {
+        "id": 37,
+        "city": "Moscow Region, Russian Federation ",
+        "data": 87,
+        "lat": 55.34,
+        "lng": 38.292
+    },
+    {
+        "id": 38,
+        "city": "Phoenix, Arizona Area ",
+        "data": 81,
+        "lat": 33.443,
+        "lng": -112.149
+    },
+    {
+        "id": 39,
+        "city": "Fort Wayne, Indiana Area ",
+        "data": 77,
+        "lat": 41.237,
+        "lng": -85.554
+    },
+    {
+        "id": 40,
+        "city": "Provo, Utah Area ",
+        "data": 77,
+        "lat": 40.235,
+        "lng": -111.638
+    },
+    {
+        "id": 41,
+        "city": "Urbana-Champaign, Illinois Area ",
+        "data": 73,
+        "lat": 40.111,
+        "lng": -88.207
+    },
+    {
+        "id": 42,
+        "city": "Tokyo, Japan ",
+        "data": 72,
+        "lat": 35.709,
+        "lng": 139.732
+    },
+    {
+        "id": 43,
+        "city": "Greater Philadelphia Area ",
+        "data": 70,
+        "lat": 39.751,
+        "lng": -75.757
+    },
+    {
+        "id": 44,
+        "city": "Gurgaon, India ",
+        "data": 68,
+        "lat": 28.459,
+        "lng": 77.027
+    },
+    {
+        "id": 45,
+        "city": "Portland, Oregon Area ",
+        "data": 67,
+        "lat": 45.456,
+        "lng": -122.699
+    },
+    {
+        "id": 46,
+        "city": "Guangzhou, Guangdong, China ",
+        "data": 62,
+        "lat": 23.129,
+        "lng": 113.264
+    },
+    {
+        "id": 47,
+        "city": "Taipei City, Taiwan ",
+        "data": 59,
+        "lat": 25.033,
+        "lng": 121.565
+    },
+    {
+        "id": 48,
+        "city": "Huntsville, Alabama Area ",
+        "data": 55,
+        "lat": 34.649,
+        "lng": -86.774
+    },
+    {
+        "id": 49,
+        "city": "Cape Town Area, South Africa ",
+        "data": 51,
+        "lat": -33.904,
+        "lng": 18.416
+    },
+    {
+        "id": 50,
+        "city": "Omaha Area ",
+        "data": 47,
+        "lat": 14.595,
+        "lng": 120.967
+    },
+    {
+        "id": 51,
+        "city": "Sydney, Australia ",
+        "data": 47,
+        "lat": -33.867,
+        "lng": 151.207
+    },
+    {
+        "id": 52,
+        "city": "Greater Pittsburgh Area ",
+        "data": 43,
+        "lat": 39.823,
+        "lng": -79.568
+    },
+    {
+        "id": 53,
+        "city": "Amsterdam Area, Netherlands ",
+        "data": 38,
+        "lat": 52.351,
+        "lng": 4.759
+    },
+    {
+        "id": 54,
+        "city": "Bucharest, Romania ",
+        "data": 36,
+        "lat": 44.427,
+        "lng": 26.103
+    },
+    {
+        "id": 55,
+        "city": "Saint Petersburg, Russian Federation ",
+        "data": 33,
+        "lat": 59.934,
+        "lng": 30.335
+    },
+    {
+        "id": 56,
+        "city": "Shenzhen, Guangdong, China ",
+        "data": 32,
+        "lat": 22.543,
+        "lng": 114.058
+    },
+    {
+        "id": 57,
+        "city": "Mumbai Area, India ",
+        "data": 31,
+        "lat": 19.131,
+        "lng": 72.908
+    },
+    {
+        "id": 58,
+        "city": "Beijing Suburb, China ",
+        "data": 30,
+        "lat": 40.377,
+        "lng": 116.843
+    },
+    {
+        "id": 59,
+        "city": "Cracow, Lesser Poland District, Poland ",
+        "data": 28,
+        "lat": 50.065,
+        "lng": 19.945
+    },
+    {
+        "id": 60,
+        "city": "Frankfurt Am Main Area, Germany ",
+        "data": 26,
+        "lat": 50.111,
+        "lng": 8.682
+    },
+    {
+        "id": 61,
+        "city": "Ottawa, Canada Area ",
+        "data": 26,
+        "lat": 45.099,
+        "lng": -75.625
+    },
+    {
+        "id": 62,
+        "city": "Wuhan, Hubei, China ",
+        "data": 19,
+        "lat": 30.593,
+        "lng": 114.305
+    },
+    {
+        "id": 63,
+        "city": "Central Region, Denmark ",
+        "data": 18,
+        "lat": 56.302,
+        "lng": 9.303
+    },
+    {
+        "id": 64,
+        "city": "Kawasaki, Kanagawa, Japan ",
+        "data": 16,
+        "lat": 35.531,
+        "lng": 139.703
+    },
+    {
+        "id": 65,
+        "city": "Chengdu, Sichuan, China ",
+        "data": 13,
+        "lat": 30.573,
+        "lng": 104.067
+    },
+    {
+        "id": 66,
+        "city": "Yokohama, Kanagawa, Japan ",
+        "data": 13,
+        "lat": 35.444,
+        "lng": 139.638
+    },
+    {
+        "id": 67,
+        "city": "Salt Lake City Area ",
+        "data": 12,
+        "lat": 40.601,
+        "lng": -111.583
+    },
+    {
+        "id": 68,
+        "city": "New Brunswick, Canada ",
+        "data": 11,
+        "lat": 46.565,
+        "lng": -66.462
+    },
+    {
+        "id": 69,
+        "city": "New Taipei City, Taiwan ",
+        "data": 10,
+        "lat": 25.017,
+        "lng": 121.463
+    },
+    {
+        "id": 70,
+        "city": "Hangzhou, Zhejiang, China ",
+        "data": 9,
+        "lat": 30.274,
+        "lng": 120.155
+    },
+    {
+        "id": 71,
+        "city": "Lyon Area, France ",
+        "data": 9,
+        "lat": 48.49,
+        "lng": 7.679
+    },
+    {
+        "id": 72,
+        "city": "Canberra, Australia ",
+        "data": 8,
+        "lat": -35.282,
+        "lng": 149.129
+    },
+    {
+        "id": 73,
+        "city": "Chambéry Area, France ",
+        "data": 7,
+        "lat": 45.565,
+        "lng": 5.918
+    },
+    {
+        "id": 74,
+        "city": "Kitchener, Canada Area ",
+        "data": 7,
+        "lat": 43.437,
+        "lng": -80.515
+    },
+    {
+        "id": 75,
+        "city": "Melbourne, Australia ",
+        "data": 7,
+        "lat": -37.814,
+        "lng": 144.963
+    },
+    {
+        "id": 76,
+        "city": "Hamburg Area, Germany ",
+        "data": 6,
+        "lat": 38.041,
+        "lng": -84.499
+    },
+    {
+        "id": 77,
+        "city": "Saint-Nazaire Area, France ",
+        "data": 6,
+        "lat": 48.536,
+        "lng": 7.788
+    },
+    {
+        "id": 78,
+        "city": "Sverdlovsk Region, Russian Federation ",
+        "data": 6,
+        "lat": 59.008,
+        "lng": 61.932
+    },
+    {
+        "id": 79,
+        "city": "Tianjin City, China ",
+        "data": 6,
+        "lat": 39.084,
+        "lng": 117.201
+    },
+    {
+        "id": 80,
+        "city": "Ontario, Canada ",
+        "data": 5,
+        "lat": 51.254,
+        "lng": -85.323
+    },
+    {
+        "id": 81,
+        "city": "Rennes Area, France ",
+        "data": 5,
+        "lat": 47.628,
+        "lng": 7.624
+    },
+    {
+        "id": 82,
+        "city": "Xi‘an, Shaanxi, China ",
+        "data": 5,
+        "lat": 34.342,
+        "lng": 108.94
+    },
+    {
+        "id": 83,
+        "city": "Ahmedabad Area, India ",
+        "data": 4,
+        "lat": 23.071,
+        "lng": 72.636
+    },
+    {
+        "id": 84,
+        "city": "Cardiff, United Kingdom ",
+        "data": 4,
+        "lat": 51.482,
+        "lng": -3.179
+    },
+    {
+        "id": 85,
+        "city": "Gdansk, Pomeranian District, Poland ",
+        "data": 4,
+        "lat": 54.352,
+        "lng": 18.647
+    },
+    {
+        "id": 86,
+        "city": "Saratov Region, Russian Federation ",
+        "data": 4,
+        "lat": 51.837,
+        "lng": 46.754
+    },
+    {
+        "id": 87,
+        "city": "Chandigarh Area, India ",
+        "data": 3,
+        "lat": 30.702,
+        "lng": 76.8
+    },
+    {
+        "id": 88,
+        "city": "Charlottesville, Virginia Area ",
+        "data": 3,
+        "lat": 38.033,
+        "lng": -78.516
+    },
+    {
+        "id": 89,
+        "city": "Grenoble Area, France ",
+        "data": 3,
+        "lat": 48.575,
+        "lng": 7.767
+    },
+    {
+        "id": 90,
+        "city": "Houston, Texas Area ",
+        "data": 3,
+        "lat": 29.671,
+        "lng": -95.452
+    },
+    {
+        "id": 91,
+        "city": "Kuala Lumpur, Malaysia ",
+        "data": 3,
+        "lat": 3.139,
+        "lng": 101.687
+    },
+    {
+        "id": 92,
+        "city": "Lille Area, France ",
+        "data": 3,
+        "lat": 50.629,
+        "lng": 3.057
+    },
+    {
+        "id": 93,
+        "city": "Munich Area, Germany ",
+        "data": 3,
+        "lat": 48.135,
+        "lng": 11.582
+    },
+    {
+        "id": 94,
+        "city": "Bandung Area, West Java, Indonesia ",
+        "data": 2,
+        "lat": -6.965,
+        "lng": 107.638
+    },
+    {
+        "id": 95,
+        "city": "Huzhou, Zhejiang, China ",
+        "data": 2,
+        "lat": 30.894,
+        "lng": 120.087
+    },
+    {
+        "id": 96,
+        "city": "Indianapolis, Indiana Area ",
+        "data": 2,
+        "lat": 41.574,
+        "lng": -87.48
+    },
+    {
+        "id": 97,
+        "city": "Kolkata Area, India ",
+        "data": 2,
+        "lat": 22.512,
+        "lng": 88.359
+    },
+    {
+        "id": 98,
+        "city": "London, Canada Area ",
+        "data": 2,
+        "lat": 48.435,
+        "lng": -123.419
+    },
+    {
+        "id": 99,
+        "city": "Metz Area, France ",
+        "data": 2,
+        "lat": 48.583,
+        "lng": 7.733
+    },
+    {
+        "id": 100,
+        "city": "New South Wales, Australia ",
+        "data": 2,
+        "lat": -33.864,
+        "lng": 151.205
+    },
+    {
+        "id": 101,
+        "city": "Perth, Australia ",
+        "data": 2,
+        "lat": -31.954,
+        "lng": 115.857
+    },
+    {
+        "id": 102,
+        "city": "Brest Area, France ",
+        "data": 1,
+        "lat": 48.537,
+        "lng": 7.785
+    },
+    {
+        "id": 103,
+        "city": "Brisbane, Australia ",
+        "data": 1,
+        "lat": -27.471,
+        "lng": 153.023
+    },
+    {
+        "id": 104,
+        "city": "British Columbia, Canada ",
+        "data": 1,
+        "lat": 53.727,
+        "lng": -127.648
+    },
+    {
+        "id": 105,
+        "city": "Constantza County, Romania ",
+        "data": 1,
+        "lat": 44.213,
+        "lng": 28.255
+    },
+    {
+        "id": 106,
+        "city": "Jakarta Area, Indonesia ",
+        "data": 1,
+        "lat": -6.174,
+        "lng": 106.823
+    },
+    {
+        "id": 107,
+        "city": "Mayiladuthurai Area, India ",
+        "data": 1,
+        "lat": 11.102,
+        "lng": 79.652
+    },
+    {
+        "id": 108,
+        "city": "Montreal, Canada Area ",
+        "data": 1,
+        "lat": 48.42,
+        "lng": -123.381
+    },
+    {
+        "id": 109,
+        "city": "Port Blair Area, India ",
+        "data": 1,
+        "lat": 22.763,
+        "lng": 88.367
+    },
+    {
+        "id": 110,
+        "city": "Rest of Zhejiang, China ",
+        "data": 1,
+        "lat": 40.01,
+        "lng": 119.83
+    },
+    {
+        "id": 111,
+        "city": "West Kalimantan Province, Indonesia ",
+        "data": 1,
+        "lat": -0.279,
+        "lng": 111.475
+    }
+]
