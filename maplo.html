@@ -107,11 +107,19 @@
             text-decoration: none;
         }
 
-        #views .control_button.append_button {
-            text-align: center;
+        #views .append_control {
+            width: 100%;
             display: block;
+            margin-top: 20px;
+        }
+
+        #views .append_control .control_button.append_button,
+        #views .append_control .control_button.locate_all_button
+        {
+            text-align: center;
             width: 150px;
             margin: 0 auto;
+            padding-left: 20px;
         }
 
         #views .control_button.delete_button {
@@ -223,12 +231,25 @@ var createTabMenu = function(menu_id, tabs, visible_tab_id) {
  */
 var createTableView = function(state, div_id) {
 
+    var checkRowData = function(cur_row) {
+        var status_field = $(cur_row).find('input[name=status]');
+        var data_point = retrieveDataFromRow(cur_row);
+        if (state.isValidDataPoint(data_point)) {
+            status_field.val('ok');
+            $(cur_row).addClass('valid_data').removeClass('in_valid_data');
+            return true;
+        } else {
+            status_field.val('error');
+            $(cur_row).addClass('in_valid_data').removeClass('valid_data');
+            return false;
+        }
+    };
+
     /**
      * Based on the given data row, try to use the city field to find the location.
      */
-    var retrieveLocation = function(cur_row) {
+    var retrieveLocation = function(cur_row, callback) {
         var geocoder = gapi.getGeocoder();
-        var status_field = cur_row.find('input[name=status]');
         var city = cur_row.find('input[name=city]').val();
         geocoder.geocode({ 'address': city }, function(results, status) {
             if (status == google.maps.GeocoderStatus.OK) {
@@ -236,11 +257,38 @@ var createTableView = function(state, div_id) {
                 var lng = results[0].geometry.location.lng().toFixed(3);
                 $(cur_row).find('input[name=lat]').val(lat);
                 $(cur_row).find('input[name=lng]').val(lng);
-                status_field.val('OK');
+                checkRowData(cur_row);
             } else {
+                var status_field = cur_row.find('input[name=status]');
                 status_field.val('Unknown city');
             }
+            if (callback !== undefined) {
+                callback();
+            }
         });
+    };
+
+    var locateAllCities = function() {
+        var table = getCurrentTable();
+        var all_rows = $(table).find('.tb_row');
+        var index = 0;
+
+        var handleNext = function() {
+            index++;
+            if (index < all_rows.length) {
+                if (checkRowData(all_rows[index])) {
+                    handleNext();
+                } else {
+                    setTimeout(function () {
+                        retrieveLocation($(all_rows[index]), handleNext);
+                    }, window.gapi.getTimeout());
+                }
+            }
+        };
+
+        if (all_rows.length > 0) {
+            retrieveLocation($(all_rows[index]), handleNext);
+        }
     };
 
     // used for creating row_id
@@ -254,7 +302,7 @@ var createTableView = function(state, div_id) {
         var row_id = div_id + '_r_' + rowCounter;
         rowCounter++;
         return $('<tr id="' + row_id + '" class="tb_row" >' +
-                '<td>' + rowCounter + '</td>' +
+                '<td class="row_index">' + rowCounter + '</td>' +
                 '<td><input name="city" type="text" placeholder="Tokyo"/></td>' +
                 '<td><input name="data" type="text" placeholder="123214"/></td>' +
                 '<td>' +
@@ -286,6 +334,17 @@ var createTableView = function(state, div_id) {
         return cur_row;
     };
 
+    var retrieveDataFromRow = function(row, index) {
+        index = (index !== undefined) ? index : parseInt($(row).find('.row_index').html());
+        return {
+            id: index,
+            city: $(row).find('input[name=city]').val(),
+            data: parseFloat($(row).find('input[name=data]').val()),
+            lat: parseFloat($(row).find('input[name=lat]').val()),
+            lng: parseFloat($(row).find('input[name=lng]').val())
+        };
+    };
+
     /**
      * Retrieve the list of data inputed in the table.
      * @returns {Array}
@@ -295,14 +354,7 @@ var createTableView = function(state, div_id) {
         var table = getCurrentTable();
         $(table).find('.tb_row').each(function(index, element){
             if (!$(element).hasClass('hidden')) {  // not been deleted.
-                var elmt = {
-                    id: index,
-                    city: $(element).find('input[name=city]').val(),
-                    data: parseFloat($(element).find('input[name=data]').val()),
-                    lat: parseFloat($(element).find('input[name=lat]').val()),
-                    lng: parseFloat($(element).find('input[name=lng]').val())
-                };
-                plotData = plotData.concat(elmt);
+                plotData = plotData.concat(retrieveDataFromRow(element, index));
             }
         });
         return plotData;
@@ -313,13 +365,7 @@ var createTableView = function(state, div_id) {
         $(table_row).find('input[name=data]').val(data_point.data);
         $(table_row).find('input[name=lat]').val(data_point.lat);
         $(table_row).find('input[name=lng]').val(data_point.lng);
-        if (state.isValidDataPoint(data_point)) {
-            $(table_row).find('input[name=status]').val('ok');
-            $(table_row).addClass('valid_data');
-        } else {
-            $(table_row).find('input[name=status]').val('error');
-            $(table_row).addClass('in_valid_data')
-        }
+        checkRowData(table_row);
         return table_row;
     };
 
@@ -341,11 +387,12 @@ var createTableView = function(state, div_id) {
     };
 
     var renderTable = function() {
-        var append_row_button = $('<span class="append_control"><input type="button" value="Add Row" class="control_button append_button"/></span>').click(appendRow);
+        var append_row_button = $('<input type="button" value="Add Row" class="control_button append_button"/>').click(appendRow);
+        var controls = $('<span class="append_control"></span>').append(append_row_button);
 
         resetCounter();
         var new_table = createEmptyTable();
-        $('#' + div_id).empty().append(new_table).append(append_row_button);
+        $('#' + div_id).empty().append(new_table).append(controls);
         var data_points = state.getDataPoints();
         if (data_points.length == 0) {
             appendRow();
@@ -355,6 +402,8 @@ var createTableView = function(state, div_id) {
                 addDataToTable(cur_data);
             }
         }
+
+        locateAllCities();
     };
 
     var updateState = function() {
@@ -382,7 +431,6 @@ window.gapi = {
     }
 };
 
-
 /**
  */
 var createDataView = function(state, div_id) {
@@ -398,7 +446,25 @@ var createDataView = function(state, div_id) {
      * @param text_data{String}
      */
     var parseTextToPlotData = function(text_data) {
-        return JSON.parse(text_data);
+        try {
+            return JSON.parse(text_data);
+        } catch (e) {
+            var return_data = [];
+            var lines = text_data.split('\n');
+            for (var i = 0; i < lines.length; ++i) {
+                // TODO(weidong): may be use better way to determine data format?
+                var cur_line = lines[i];
+                var fields = cur_line.split('\t');
+                return_data = return_data.concat({
+                    id: i,
+                    city: fields[0],
+                    data: fields[1].replace(",", ""),
+                    lat: null,
+                    lng: null
+                });
+            }
+            return return_data;
+        }
     };
 
     /**
@@ -504,6 +570,9 @@ var initEnv = function() {
     window.gapi = {
         getGeocoder: function() {
             return geocoderObj;
+        },
+        getTimeout: function() {
+            return 500; // restrict geoapi request to be no faster than this given timeout
         },
         getMap: function() {
             return mapObj;
