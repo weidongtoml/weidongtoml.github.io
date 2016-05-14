@@ -8,7 +8,7 @@
             border-bottom: 1px solid black;
         }
 
-        #data_view #data_content {
+        #data_view textarea {
             width: 600px;
             height: 400px;
             resize: vertical;
@@ -20,7 +20,7 @@
         }
         
         .hidden {
-            /* display: none; */
+            display: none;
         }
 
         .block {
@@ -31,86 +31,139 @@
 <body>
 <div id="tab_menu"></div>
 <div id="table_view"></div>
-<div id="data_view" class="hidden">
-    <textarea id="data_content" name="data_content_textarea"></textarea>
-</div>
-<div id="map_view" class="hidden"></div>
+<div id="data_view"></div>
+<div id="map_view"></div>
 <script>
 
-var setTabVisible = function(visible_tab_id) {
-    var all_tabs = ['table_view', 'data_view', 'map_view'];
-    for (var i = 0; i < all_tabs.length; ++i) {
-        var cur_tab = all_tabs[i];
-        if (cur_tab !== visible_tab_id) {
-            $('#' + cur_tab).addClass('hidden');
-        }
+/**
+ * Create the tab menu.
+ */
+var createTabMenu = function(menu_id, tabs, visible_tab_id) {
+    var id_to_tab_conf = {};
+    for (var i = 0; i < tabs.length; ++i) {
+        id_to_tab_conf[tabs[i].id] = tabs[i];
     }
-    $('#' + visible_tab_id).removeClass('hidden');
+
+    var all_tabs = tabs;
+    var cur_visible_tab = visible_tab_id;
+    var setTabVisible = function(visible_tab_id) {
+        // hide all other tabs.
+        for (var i = 0; i < all_tabs.length; ++i) {
+            var cur_tab = all_tabs[i];
+            if (cur_tab.id !== visible_tab_id) {
+                $('#' + cur_tab.id).addClass('hidden');
+            }
+        }
+        // show only the selected tab and remeber it.
+        $('#' + visible_tab_id).removeClass('hidden');
+        id_to_tab_conf[visible_tab_id].obj.render();
+        cur_visible_tab = visible_tab_id;
+    };
+
+    var getCurTab = function() {
+        return id_to_tab_conf[cur_visible_tab];
+    };
+
+    var createTab = function(tab_conf) {
+        return $('<input type="button" value="' + tab_conf.title + '" />').click(function() {
+            // Check if the current tab needs to upate data
+            var is_update_ok = true;
+
+            var cur_tab = getCurTab();
+            if (cur_tab.obj.updateState !== undefined) {
+                if (!cur_tab.obj.updateState()) {
+                    is_update_ok = false;
+                }
+            }
+
+            if (is_update_ok) {
+                setTabVisible(tab_conf.id);
+            } else {
+                console.error('update failed for: ' + tab_conf.id);
+                alert("Check data input");
+            }
+        });
+    };
+
+    var renderTab = function() {
+        for (var i = 0; i < all_tabs.length; ++i) {
+            var tab = createTab(tabs[i]);
+            $('#' + menu_id).append(tab);
+        }
+
+        setTabVisible(cur_visible_tab);
+    };
+
+    return {
+        render: renderTab
+    }
 };
 
-var initializeTabMenu = function(menu_id) {
-    var table_view_button = $('<input name="table_view_button" type="button" value="Table View"/>').click(function(){
-        setTabVisible('table_view');
-    });
-    var data_view_button = $('<input name="data_view_button" type="button" value="Data View"/>').click(function(){
-        setTabVisible('data_view');
-    });
-    var map_view_button = $('<input name="map_view_button" type="button" value="Map View"/>').click(function(){
-        setTabVisible('map_view');
-    });
-    $('#' + menu_id)
-            .append(table_view_button)
-            .append(data_view_button)
-            .append(map_view_button);
+/**
+ */
+var createTableView = function(state, div_id) {
 
-};
+    /**
+     * Based on the given data row, try to use the city field to find the location.
+     */
+    var retrieveLocation = function(cur_row) {
+        var geocoder = gapi.getGeocoder();
+        var status_field = cur_row.find('.tb_status');
+        var city = cur_row.find('input[name=city]').val();
+        geocoder.geocode({ 'address': city }, function(results, status) {
+            if (status == google.maps.GeocoderStatus.OK) {
+                var lat = results[0].geometry.location.lat();
+                var lng = results[0].geometry.location.lng();
+                $(cur_row).find('input[name=lat]').val(lat);
+                $(cur_row).find('input[name=lng]').val(lng);
+                status_field.html('OK');
+            } else {
+                status_field.html('Failed to locate city');
+            }
+        });
+    };
 
-var createTableView = function(table_id, data_file_id) {
     // used for creating row_id
     var rowCounter = 0;
+
+    var resetCounter = function() {
+        rowCounter = 0;
+    }
+
+    var createNewTableRow = function() {
+        var row_id = div_id + '_r_' + rowCounter;
+        rowCounter++;
+        return $('<tr id="' + row_id + '" class="tb_row" >' +
+                '<td>' + rowCounter + '</td>' +
+                '<td><input name="city" type="text"/></td>' +
+                '<td><input name="data" type="text"/></td>' +
+                '<td>' +
+                '<input name="locate_button" type="button" value="Locate" /> | ' +
+                '<input name="delete_button" type="button" value="Delete" />' +
+                '</td>' +
+                '<td><input name="lat" type="text"/></td>' +
+                '<td><input name="lng" type="text"/></td>' +
+                '<td class="tb_status"></td>' +
+                '</tr>');
+    };
 
     /**
      * Append a row at the end of the table specified by table_id, and add the necessary event handler for retrieving
      * the location of the given city.
      */
     var appendRow = function () {
-        var row_id = table_id + '_r_' + rowCounter;
-        rowCounter++;
-        var cur_row = $(
-                '<tr id="' + row_id + '" class="tb_row" >' +
-                '<td>' + rowCounter + '</td>' +
-                '<td><input name="city" type="text"/></td>' +
-                '<td><input name="data" type="text"/></td>' +
-                '<td>' +
-                    '<input name="locate_button" type="button" value="Locate" /> | ' +
-                    '<input name="delete_button" type="button" value="Delete" />' +
-                '</td>' +
-                '<td><input name="lat" type="text"/></td>' +
-                '<td><input name="lng" type="text"/></td>' +
-                '<td class="tb_status"></td>' +
-                '</tr>');
-        $('#'+table_id +' tr:last').after(cur_row);
+        var table = getCurrentTable();
+        var cur_row = createNewTableRow();
+        $(table).find('tr:last').after(cur_row);
         var locate_button = cur_row.find('input[name=locate_button]');
-        var geocoder = gapi.getGeocoder();
         locate_button.click(function(){
-            var status_field = cur_row.find('.tb_status');
-            var city = cur_row.find('input[name=city]').val();
-            geocoder.geocode({ 'address': city }, function(results, status) {
-                if (status == google.maps.GeocoderStatus.OK) {
-                    var lat = results[0].geometry.location.lat();
-                    var lng = results[0].geometry.location.lng();
-                    $(cur_row).find('input[name=lat]').val(lat);
-                    $(cur_row).find('input[name=lng]').val(lng);
-                    status_field.html('OK');
-                } else {
-                    status_field.html('Failed to locate city');
-                }
-            });
+            retrieveLocation(cur_row);
         });
         var delete_button = cur_row.find('input[name=delete_button]');
         delete_button.click(function(){
             cur_row.addClass('hidden');
         });
+        return cur_row;
     };
 
     /**
@@ -119,7 +172,8 @@ var createTableView = function(table_id, data_file_id) {
      */
     var retrievePlotDataFromTable = function() {
         var plotData = [];
-        $('#' + table_id).find('.tb_row').each(function(index, element){
+        var table = getCurrentTable();
+        $(table).find('.tb_row').each(function(index, element){
             var elmt = {
                 id: index,
                 city: $(element).find('input[name=city]').val(),
@@ -132,26 +186,97 @@ var createTableView = function(table_id, data_file_id) {
         return plotData;
     };
 
-    /**
-     * Check if the given data_point is valid, i.e. containing all the necessary information.
-     */
-    var isValidDataPoint = function(data_point) {
-        return data_point.city !== '' && !isNaN(data_point.data) && !isNaN(data_point.lat) && !isNaN(data_point.lng);
+    var addDataToRow = function(data_point, table_row) {
+        $(table_row).find('input[name=city]').val(data_point.city);
+        $(table_row).find('input[name=data]').val(data_point.data);
+        $(table_row).find('input[name=lat]').val(data_point.lat);
+        $(table_row).find('input[name=lng]').val(data_point.lng);
+        return table_row;
+    };
+
+    var addDataToTable = function(data_point) {
+        var new_row = appendRow();
+        addDataToRow(data_point, new_row);
     };
 
     /**
-     * Render the JSON representation of the data retrieved from the table into data_file_id's textarea.
+     * Renders the initial data inputting table.
      */
-    var generateDataFile = function() {
+    var createEmptyTable = function() {
+        var append_row_button = $('<input type="button" value="Add Row"/>').click(appendRow);
+        var table_header = '<tr class="tb_hd"><th>Id</th><th>City</th><th>Data</th><th>Controls</th><th>Latitude</th><th>Longitude</th><th>Status</th></tr>';
+        return $('<table>' + table_header + '</table>').append(append_row_button);
+    };
+
+    var getCurrentTable = function() {
+        return $('#' + div_id).find('table');
+    };
+
+    var renderTable = function() {
+        var cur_table = getCurrentTable();
+        if (cur_table !== undefined) {
+            cur_table.remove();
+        }
+        resetCounter();
+        var new_table = createEmptyTable();
+        $('#' + div_id).append(new_table);
+        var data_points = state.getDataPoints();
+        console.log('In renderTable: ' + data_points.length);
+        for (var i = 0; i < data_points.length; ++i) {
+            var cur_data = data_points[i];
+            addDataToTable(cur_data);
+        }
+    };
+
+    var updateState = function() {
+        var data_points = retrievePlotDataFromTable();
+        console.log('updateState:');
+        console.log(data_points);
+        state.updateDataPoints(data_points);
+        return true;
+    };
+
+    return {
+        updateState: updateState,
+        render: renderTable
+    };
+};
+
+
+// default gapi in which Google Map Api is not yet set up.
+window.gapi = {
+    getGeocoder: function() {
+        console.error('Google geocoder object is not initialized.');
+        return null;
+    },
+    getMap: function() {
+        console.error('Google map object is not initialized.');
+        return null;
+    }
+};
+
+
+/**
+ */
+var createDataView = function(state, div_id) {
+    /**
+     * Render the JSON representation of the data to textual form.
+     */
+    var convertPlotDataToText = function(plot_data) {
+        return JSON.stringify(plot_data);  // TODO(weidong): maybe use own to make it look nicer?
+
         var fields = ['id', 'city', 'data', 'lat', 'lng'];
-        var plot_data = retrievePlotDataFromTable();
-        var data_content = 'var data = [\n';
+        var data_content = '[\n';
         for (var i = 0; i < plot_data.length; ++i) {
             var cur_row = plot_data[i];
             var row_data = '{';
             for (var j = 0; j < fields.length; ++j) {
                 var field_name = fields[j];
-                row_data += field_name + ': ' + cur_row[field_name];
+                if (field_name === 'city') {
+                    row_data += '"' + field_name + '": "' + cur_row[field_name] + '"';
+                } else {
+                    row_data += '"' + field_name + '": ' + cur_row[field_name];
+                }
                 if (j != fields.length - 1) {
                     row_data += ', ';
                 }
@@ -159,19 +284,67 @@ var createTableView = function(table_id, data_file_id) {
             row_data += '},';
             data_content += row_data + '\n';
         }
-        data_content += '];\n';
-        $('#' + data_file_id).find('textarea').val(data_content);
+        data_content = data_content.substring(0, data_content.length - 2);  // remove trailing ,
+        data_content += ']\n';
+        return data_content;
     };
 
     /**
-     * Plot the given data to the google map object
-     * @param plot_data{Array}
+     * Converts the text data to JSON representation.
+     * @param text_data{String}
      */
-    var plotDataToMap = function(plot_data) {
-        var map = gapi.getMap();
-        for (var i = 0; i < plot_data.length; ++i) {
-            var elmnt = plot_data[i];
-            if (isValidDataPoint(elmnt)) {
+    var parseTextToPlotData = function(text_data) {
+        return JSON.parse(text_data);  // TODO(weidong): to be implemented using JSON parser.
+    };
+
+    /**
+     * Update the global data points with the values in the JSON format as displayed in the text area.
+     */
+    var updateState = function() {
+        var text_data = getTextArea().val();
+        console.log('Data View updateState: text_data: ' + text_data);
+        if (text_data === undefined) {
+            return false;
+        }
+        var new_plot_data = parseTextToPlotData(text_data);
+        state.updateDataPoints(new_plot_data);
+        return true;
+    };
+
+    /**
+     * Retrieve the jQuery object for the text area.
+     */
+    var getTextArea = function() {
+        return $('#' + div_id).find('textarea[name=data_content_textarea]');
+    };
+
+    /**
+     * Renders the data view.
+     */
+    var renderDataView = function() {
+        var plot_data = state.getDataPoints();
+        console.log('Data View renderDataView: ' + plot_data.length);
+        console.log(plot_data);
+        var data_content = convertPlotDataToText(plot_data);
+        var new_text_area = $('<textarea name="data_content_textarea"></textarea>');
+        new_text_area.val(data_content);
+
+        $('#' + div_id).empty().append(new_text_area);
+    };
+
+    return  {
+        render: renderDataView,
+        updateState: updateState
+    }
+};
+
+
+var createMapView = function(state, div_id) {
+
+    var plotDataToMap = function(data_points, map) {
+        for (var i = 0; i < data_points.length; ++i) {
+            var elmnt = data_points[i];
+            if (state.isValidDataPoint(elmnt)) {
                 // TODO(weidong): maybe need a way to keep track of the circle we have plotted and remove them on update?
                 var cityCircle = new google.maps.Circle({
                     strokeColor: '#FF0000',
@@ -187,43 +360,22 @@ var createTableView = function(table_id, data_file_id) {
         }
     };
 
-    /**
-     * Renders the initial data inputting table.
-     */
-    var createInitialTable = function() {
-        var append_row_button = $('<input type="button" value="Add Row"/>').click(appendRow);
-        var generate_data_button = $('<input type="button" value="Generate Data"/>').click(generateDataFile);
-        var update_map_button = $('<input type="button" value="Plot Map" />').click(function() {
-            var plot_data = retrievePlotDataFromTable();
-            plotDataToMap(plot_data);
+    var renderMap = function() {
+        var map = new google.maps.Map(document.getElementById(div_id), {
+            zoom: 4,
+            center: {lat: 37.090, lng: -95.712},
+            mapTypeId: google.maps.MapTypeId.TERRAIN
         });
-        var tableHeader = '<tr class="tb_hd"><th>Id</th><th>City</th><th>Data</th><th>Controls</th><th>Latitude</th><th>Longitude</th><th>Status</th></tr>';
-        $('#' + table_id).
-            append('<table>' + tableHeader + '</table>').
-            append(append_row_button).
-            append(generate_data_button).
-            append(update_map_button);
-        appendRow();
+
+        var data_points = state.getDataPoints();
+
+        plotDataToMap(data_points, map);
     };
 
-
-    createInitialTable();
-
-    initializeTabMenu('tab_menu');
-};
-
-
-window.gapi = {
-    getGeocoder: function() {
-        console.error('Google geocoder object is not initialized.');
-        return null;
-    },
-    getMap: function() {
-        console.error('Google map object is not initialized.');
-        return null;
+    return {
+        render: renderMap
     }
 };
-
 
 /**
  * Invoked after Google Map API has been loaded.
@@ -249,15 +401,59 @@ var initEnv = function() {
         var state = {
             data_points: []
         };
-        return state;
+
+        /**
+         * Check if the given data_point is valid, i.e. containing all the necessary information.
+         */
+        var isValidDataPoint = function(data_point) {
+            return data_point.city !== '' && !isNaN(data_point.data) && !isNaN(data_point.lat) && !isNaN(data_point.lng);
+        };
+
+        var getDataPoints = function() {
+            console.log('getDataPoints');
+            console.log(state.data_points);
+            return state.data_points;
+        };
+
+        var updateDataPoints = function(data_points) {
+            // TODO(weidong): add sanity check
+            console.log('updateDataPoints:');
+            console.log(data_points);
+            state.data_points = data_points
+        };
+
+        return {
+            getDataPoints: getDataPoints,
+            updateDataPoints: updateDataPoints,
+            isValidDataPoint: isValidDataPoint
+        };
     };
 
-    createTableView('table_view', 'data_view');
+    var g_state = createInitialState();
 
-}
+    var table_view = createTableView(g_state, 'table_view');
+    var data_view = createDataView(g_state, 'data_view');
+    var map_view = createMapView(g_state, 'map_view');
 
+    var tabs = [
+        {
+            id: 'table_view',
+            obj: table_view,
+            title: 'Table View'
+        }, {
+            id: 'data_view',
+            obj: data_view,
+            title: 'Data View'
+        }, {
+            id: 'map_view',
+            obj: map_view,
+            title: 'Map View'
+        }
+    ];
+    var tab_menu = createTabMenu('tab_menu', tabs, 'table_view');
+    tab_menu.render();
 
-
+};
 </script>
 <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyADVWJgaslV8G8tZvmuPbIvI69FKokPYUA&callback=initEnv">
