@@ -508,6 +508,10 @@ var createDataView = function(state, div_id) {
 
 var createMapView = function(state, div_id) {
 
+    var normalize = function(d) {
+        return  (Math.log10(d) + 1) * 10000;
+    };
+
     var plotPoint = function(data_point, map) {
         var cityCircle = new google.maps.Circle({
             strokeColor: '#FF0000',
@@ -518,7 +522,7 @@ var createMapView = function(state, div_id) {
             clickable: true,
             map: map,
             center: data_point,
-            radius: (Math.log10(data_point.data) + 1) * 10000
+            radius: normalize(data_point.data)
         });
 
         google.maps.event.addListener(cityCircle, 'click', function(ev){
@@ -540,9 +544,12 @@ var createMapView = function(state, div_id) {
     };
 
     var renderMap = function() {
+        var suva = {lat: -18.125, lng: 178.450};
+        var us = {lat: 37.090, lng: -95.712};
+        var tokyo = {lat: 35.689, lng: 139.692};
         var map = new google.maps.Map(document.getElementById(div_id), {
-            zoom: 4,
-            center: {lat: 37.090, lng: -95.712},
+            zoom: 2,
+            center: tokyo,
             mapTypeId: google.maps.MapTypeId.TERRAIN
         });
 
