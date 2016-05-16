@@ -456,6 +456,19 @@ var createDataView = function(state, div_id) {
         return JSON.stringify(plot_data, null, 4);
     };
 
+
+    var splitFields = function(str) {
+        var splitChar = (str.lastIndexOf("\t") > 0) ? "\t" : " ";
+
+        if (str.lastIndexOf(splitChar) > 0) {
+            var first = str.substring(0, str.lastIndexOf(splitChar) + 1);
+            var last = str.substring(str.lastIndexOf(splitChar) + 1, str.length);
+            return [first, last];
+        } else {
+            return [str, "UNKNOWN DATA"];
+        }
+    };
+
     /**
      * Converts the text data to JSON representation.
      * @param text_data{String}
@@ -469,7 +482,7 @@ var createDataView = function(state, div_id) {
             for (var i = 0; i < lines.length; ++i) {
                 // TODO(weidong): may be use better way to determine data format?
                 var cur_line = lines[i];
-                var fields = cur_line.split('\t');
+                var fields = splitFields(cur_line);
                 return_data = return_data.concat({
                     id: i,
                     city: fields[0],
