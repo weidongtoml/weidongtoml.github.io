@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="./test_util.js"></script>
+    <script src="./a2d.js"></script>
+    <script src="./linear_algebra.js"></script>
+</head>
+<body>
+    <div>
+        <canvas width='1200' height='600' id="what_is_vector"></canvas>
+    </div>
+    <script>
+        A2D_unittest_run();
+        test_Vector();
+
+        // draw a line in the pixel coordinates,
+        var drawLine = function(ctx, style, x0, y0, x1, y1) {
+            ctx.strokeStyle = style;
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
+        };
+
+        var toRadians = function(degree) {
+            return degree * Math.PI / 180;
+        };
+
+        var draw_what_is_vector = function(canvas_id) {
+            var canvas_obj = document.getElementById(canvas_id);
+            var width = canvas_obj.width;
+            var height = canvas_obj.height;
+
+            var white = 'rgb(250, 250, 250)';
+            var black = 'rgb(0, 0, 0)';
+            var green = 'rgba(0, 255, 0, 1.0)';
+            var red = 'rgb(255, 0, 0)';
+            var blue = 'rgb(0, 0, 255)';
+            var grid_color = 'rgba(0, 0, 255, 0.3)';
+
+            var grid_size = 30;
+            var offsetX = width / grid_size / 2;
+            var offsetY = height / grid_size / 2;
+            
+            // whiten background
+            var ctx = canvas_obj.getContext('2d');
+            ctx.fillStyle = black;
+            ctx.fillRect(0, 0, width, height);
+
+            // draw grids
+            ctx.strokeStyle = grid_color;
+            for (var i = 0; i <= width; i += grid_size) {
+                drawLine(ctx, grid_color, i, 0, i, height);
+            }
+            for (var i = 0; i <= height; i += grid_size) {
+                drawLine(ctx, grid_color, 0, i, width, i);
+            }
+
+            var toPixelCoordinate = function(v) {
+                var translateVector = A2D.Vector(offsetX, offsetY);
+                var inversionMatrix = A2D.Matrix(1, 0, 0, -1);
+                var scaleMatrix = A2D.Matrix(grid_size, 0, 0, grid_size);
+                var pixel_coord = A2D.mul(
+                    scaleMatrix, 
+                    A2D.add(translateVector, 
+                        A2D.mul(inversionMatrix, v)));
+                return pixel_coord;
+            }
+
+            // x-axis and y-axis
+            var origin_in_pc = toPixelCoordinate(A2D.Vector(0, 0));
+            var originX = A2D.x(origin_in_pc);
+            var originY = A2D.y(origin_in_pc);
+            drawLine(ctx, white, originX, 0, originX, height);
+            drawLine(ctx, white, 0, originY, width, originY);
+
+            // plot the given line in the vector coordinates.
+            var plotLine = function(ctx, style, start_p, end_p) {
+                var s = toPixelCoordinate(start_p);
+                var e = toPixelCoordinate(end_p);
+                drawLine(ctx, style, A2D.x(s), A2D.y(s), A2D.x(e), A2D.y(e));
+            }
+
+            var plotVector = function(ctx, style, v) {
+                // plot main line
+                plotLine(ctx, style, A2D.Zero, v);
+                // plot arrow head
+                // The arrow head consists of 2 lines. Each line starts from the
+                // end of v (hence we need to add v), in the direction of v 
+                // rotated by +/-170 degrees with a length of 0.5.
+                // Note that we need to do rotation first before translation
+                // because rotation is done with respect to the origin.
+                plotLine(ctx, style, v, 
+                    A2D.add(v, 
+                        A2D.scale(
+                            A2D.norm(
+                                A2D.mul(A2D.RotationMatrix(toRadians(-170)), 
+                                    v)), 0.5)));
+                plotLine(ctx, style, v, 
+                    A2D.add(v, 
+                        A2D.scale(
+                            A2D.norm(
+                                A2D.mul(A2D.RotationMatrix(toRadians(170)), 
+                                    v)), 0.5)));
+            }
+
+            var vector1 = A2D.Vector(2, 3);
+            plotVector(ctx, red, vector1);
+            plotVector(ctx, green, A2D.mul(A2D.RotationMatrix(toRadians(90)), vector1));
+        };
+        draw_what_is_vector('what_is_vector');
+    </script>
+</body>
+</html>
