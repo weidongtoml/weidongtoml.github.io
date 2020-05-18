@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<head>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://d3js.org/d3.v5.js"></script>
+    <script src="../js/data_set.js"></script>
+</head>
+<body>
+    <h1>Sampling Distribution of the Sample Mean</h1>
+
+    <h2>Survey Sampling</h2>
+    <div>
+        <p>
+        Sample surveys are used to obtain information about a large population by examining
+        only a small fraction of that population.
+    
+        Here we look at probabilistic sampling such that:
+        </p>
+        <ul>
+            <li>each member of the population has a specific probablity being included in the sample</li>
+            <li>the actual composition of the sample is random</li>
+        </ul>
+        <p>Using a random sampling technique has a consequence that the estimates can be guarenteed
+        to be unbiased and probabilistic bounds on errors can be calculated.
+        </p>
+    </div>
+
+    <h2>Population Parameters</h2>
+    <p>
+    Assuming we have a population of:
+    </p>
+    <ul>
+        <li>size N,</li>
+        <li>each member of the population is associated with a numerical value that we are interested in,</li>
+        <li>these numeric values are denoted by: \( x_1, x_2, ..., x_N \)
+        </li>
+    </ul>
+    <p>We define the following population parameters:</p>
+    <ul>
+        <li>Population mean / average: \( \mu = \frac{1}{N} \sum_{i=1}^N x_i \)</li>
+        <li>Population total: \( \tau = \sum_{i=1}^N x_i = N \mu \)</li>
+        <li>Population variance: \( \sigma^2 = \frac{1}{N} \sum_{i=1}^N(x_i - \mu)^2 \)</li>
+        <li>Population standar deviation \( \sigma  \) is used to measure how spread out the individual values are.</li>
+    </ul>
+
+    <h2>Simple Random Sampling</h2>
+    <p>Simple random sampling is the most elementary form having:</p>
+    <ul>
+        <li>each particular sample of size \( n \) has the sample probability of occurance</li>
+        <li>sampling is done wihtout replacement so that each member of the population only appear once in the sample at most once</li>
+        <li>actual composition of the sample can be determined using a randon nunber generator.</li>
+    </ul>
+    Since the sample is random, the sample mean is also random and have statistical porperties.
+
+    <h3>Expectation and Variance of the Sample Mean</h3>
+
+    <h4>Sample Mean and Sampling Distribution of the Sample Mean</h4>
+    <p>For a sample obtained through simple random sampling, we have:</p>
+    <ul>
+        <li>\( n \) values with \( n < N \): \( X_1, X_2, ..., X_n \)</li>
+        <li>each \( X_i \) is a random variable</li>
+    </ul>
+    <p>Note that \( X_i \) is different from \( x_i \), \( X_i \) is the value 
+    of the i-th member of the sample and it is random. While \( x_i \) is the 
+    i-th membver of the population which is fixed.
+    </p>
+    <p>Define <b>sample mean</b> as 
+    $$ \bar{X} = \frac{1}{N}\sum_{i=1}^{n}X_i $$
+    as an estimate of the population.
+    </p>
+    <p>Since \( X_i \) is a random variable, so is the mean \( \bar{X} \). 
+    Its probability distribution is called the <b>sampling distribution</b> of
+    the sample mean, which determines how accurately \( \bar{X} \) estimates \( \mu \).
+    </p>
+
+    <h4>Expectation and Variance of the Sample Mean</h4>
+    <p>The expectation of the sample mean equals to the population mean:</p>
+    $$
+        E(\bar{X}) = \mu
+    $$
+    <p>The <b>standard error</b> (standard deviation) of the the sample mean is 
+    approximately equals to the population standard deviation divided by square
+    root of sample size:
+    </p>
+    $$
+        \sigma_{\bar{X}} \approx \frac{\sigma}{\sqrt{n}}
+    $$
+    <p>From the above we can see that:</p>
+    <ul>
+        <li>to double the accuracy of our estimate, the sample size must be quadrupled</li>
+        <li>if the population standard deviation is small, i.e. the population 
+        values are not very dispersed, a sample sample will be accurate</li>
+    </ul>
+    <p>Note: with simple random sampling, we actually have:</p>
+    $$ 
+    Var(\bar{X}) = \frac{\sigma^2}{n}(\frac{N - n}{N -1}) = \frac{\sigma^2}{n}(1 - \frac{n - 1}{N -1})
+    $$
+    When \( n \ll N \), we have \( \frac{N - n}{N -1} \approx 1 \), hence
+    $$
+        \sigma_{\bar{X}} = \sqrt{ Var(\bar{X}) } \approx \frac{\sigma}{\sqrt{n}}
+    $$
+
+    <div id='population'></div>
+    <div id='sample_distribution_1'></div>
+    <div id='sample_distribution_2'></div>
+    <div id='sample_distribution_3'></div>
+
+    <h3>Estimation of the Population Variance</h3>
+    <p>Since the standard error of an estimate is determined from the sample size
+    and the population variance; in practice, we have to estimate the population
+    variance since it will not be known.
+    </p>
+    <p>An unbiased estimate of \( Var(\bar{X}) \) is \( s_{\bar{X}}^2 \) given by:
+    $$
+        s_{\bar{X}}^2 = \frac{s^2}{n}(1 - \frac{n}{n]})
+    $$
+    where \( s^2 \) is the sample variance given by: 
+    $$
+        s^2 = \frac{1}{n - 1} \sum_{i = 1}^n(X_i - \bar{X})^2
+    $$
+    \( s \) is called the <b>estimated standard error</b>.
+    </p>
+
+    <h3>The Normal Approximation to the Sampling Distribution of the Sample Mean</h3>
+    <p>Given a sequence of indepdent and identically distributed random variables 
+    \( X_1, X_2, ..., \) having the common mean and variance \( \mu \) and 
+    \( \sigma^2 \), the sample mean of \( X_1, X_2, ..., X_n \) given by 
+    $$ 
+        \bar{X}_n = \frac{1}{n} \sum_{i=1}^n X_i 
+    $$
+    This sample mean has the
+    properties: 
+    $$ 
+        E(\bar{X}_n) = \mu 
+    $$
+    $$
+        Var(\bar{X}_n) = \frac{\sigma^2}{n}
+    $$
+    From the <b>Central Limit Theorm</b>, we have for a fixed number \( z \)
+    $$
+        P(\frac{\bar{X}_n - \mu}{\sigma / \sqrt{n}} \le z ) \to \Phi(z)
+    $$
+    where \( \Phi \) is the cumulative distribution function of the standard normal distribution.     
+    </p>
+    <p>Note: in practice, since we do not know the population standard deviation \( \sigma \),
+    we usually use the sample variance \( s \) to estimate it instead. Hence we
+    will have
+    $$
+        \bar{X} \sim Norm(\mu, \frac{s^2}{n})
+    $$
+    </p>
+
+    TODO: plot chart to show population + population mean, together with
+    the normal distribution of the sample mean and esimated variance.
+
+    <h2>Mathematical Derivation</h2>
+<script>
+    // Construct the dataset from the Old Faithful Geyser statistics using the 
+    // eruption intervals.
+    // The eruption intervals have a bimodal distribution, and we only take the
+    // data from the second mode with values greater than 70.
+    const dataset = DataSet.old_faithful.data.map(
+        (row) => row[DataSet.old_faithful.fieldnames.Interval]
+    ).filter(
+        (d) => !isNaN(d) && d > 70
+    );
+
+    const merge = (base, modify) => {
+        var v = {};
+        Object.assign(v, base);
+        Object.assign(v, modify);
+        return v;
+    }
+
+    // Returns an SVG node of the histogram.
+    function histogram(data, configuration) {
+        const config = merge({
+            title: 'Histogram',
+            subtitle: '',
+            width: 300,
+            height: 100,
+            margin: {top: 20, right: 20, bottom: 20, left: 30},
+            num_bins: 80,
+            show_mean: false,
+            data_range: d3.extent(data),
+            xlabel: '',
+            ylabel: ''
+        }, configuration);
+
+        const x = d3.scaleLinear()
+            .domain(config.data_range).nice()
+            .range([config.margin.left, config.width - config.margin.right]);
+
+        const bins = d3.histogram()
+            .domain(x.domain())
+            .thresholds(x.ticks(config.num_bins))(data);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(bins, d => d.length)]).nice()
+            .range([config.height - config.margin.bottom, config.margin.top]);
+
+        const yAxis = g => g
+            .attr("transform", `translate(${config.margin.left},0)`)
+            .style('font-size', '4px')
+            .style('stroke', 'black')
+            .style('stroke-width', '0.3px')
+            .call(d3.axisLeft(y).ticks(config.height / 20))
+            .call(g => g.select(".tick:last-of-type text").clone()
+                .attr("x", -30)
+                .attr('y', 10)
+                .attr("text-anchor", "start")
+                .text(config.ylabel));
+
+        const xAxis = g => g
+            .attr("transform", `translate(0,${config.height - config.margin.bottom})`)
+            .style('font-size', '4px')
+            .style('stroke', 'black')
+            .style('stroke-width', '0.3px')
+            .call(d3.axisBottom(x).ticks(config.width / 40 ).tickSizeOuter(0))
+            .call(g => g.append("text")
+                .attr("x", config.width - config.margin.right)
+                .attr("y", -6)
+                .attr("text-anchor", "end")
+                .text(config.xlabel));
+                
+        const svg = d3.create("svg")
+            .attr("viewBox", [0, 0, config.width, config.height]);
+        
+        svg.append("g")
+            .attr("fill", "#E65100")
+            .selectAll("rect")
+            .data(bins)
+            .join("rect")
+            .attr("x", d => x(d.x0) + 1)
+            .attr("width", d => Math.max(0, x(d.x1) - x(d.x0) - 1))
+            .attr("y", d => y(d.length)) 
+            .attr("height", d => y(0) - y(d.length));
+
+        svg.append("g")
+            .call(xAxis);
+        
+        svg.append("g")
+            .call(yAxis);
+
+        if (config.show_mean) {
+            const max_count = d3.max(bins.map(b => b.length))+3;
+            const average = d3.mean(data);
+
+            svg.append('line')
+                .attr('x1', x(average))
+                .attr('y1', y(0))
+                .attr('x2', x(average))
+                .attr('y2', y(max_count))
+                .style('stroke', '#69F0AE')
+                .style('stroke-width', '0.5px');
+        }
+
+        // Chart title
+        svg.append('text')
+            .style('font-size', '6px')
+            .attr('x', config.margin.left + 4)
+            .attr('y', config.margin.top)
+            .text(config.title);
+
+        // Chart subtitle
+        if (config.subtitle !== '') {
+            svg.append('text')
+                .style('font-size', '5px')
+                .attr('x', config.margin.left + 4)
+                .attr('y', config.margin.top + 6)
+                .text(config.subtitle);
+        }
+        
+        return svg.node();
+    };
+
+    function getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function singleSampleWithoutReplacement(data, sample_size) {
+        var sample_indices = new Set();
+        while (sample_indices.size < sample_size) {
+            const idx = getRandomInt(0, data.length);
+            if (!sample_indices.has(idx)) {
+                sample_indices.add(idx);
+            }
+        }
+        var sample_data = [];
+        sample_indices.forEach((i) => {
+            sample_data.push(data[i]);
+        });
+        return sample_data;
+    }
+
+    function samplingDistributionOfSampleMean(data, sample_size, num_samples) {
+        var sample_means = [];
+        const population_size = data.length;
+        for (var i = 0; i < num_samples; i++) {
+            const sample_data = singleSampleWithoutReplacement(data, sample_size);
+            sample_means.push(
+                sample_data.reduce((p, c) => p + c, 0) / sample_size
+            );
+        }
+        return sample_means;
+    }
+
+    const common_config = {
+        data_range: [60, 120],
+        xlabel: 'Interval',
+        ylabel: 'Count',
+    };
+
+    const num_samples = 500;
+
+    const div_id_to_charts = {
+        'population': histogram(
+            dataset, merge(common_config, {
+                title: 'Distribution of Population',
+                show_mean: true 
+            })),
+        'sample_distribution_1': histogram(
+            samplingDistributionOfSampleMean(dataset, 4, num_samples), 
+            merge(common_config, {
+                title: 'Sampling Distribution of the Sample Mean', 
+                subtitle: '1000 Samples of size 8'
+            })),
+        'sample_distribution_2': histogram(
+            samplingDistributionOfSampleMean(dataset, 8, num_samples), 
+            merge(common_config, {
+                title: 'Sampling Distribution of the Sample Mean', 
+                subtitle: '1000 Samples of size 8'
+            })),
+        'sample_distribution_3': histogram(
+            samplingDistributionOfSampleMean(dataset, 16, num_samples), 
+            merge(common_config, {
+                title: 'Sampling Distribution of the Sample Mean', 
+                subtitle: '1000 Samples of size 16'
+            }))
+    };
+
+    for (var k in div_id_to_charts) {
+        document.getElementById(k).append(div_id_to_charts[k]);
+    }
+</script>
+</body>
